@@ -1,0 +1,23 @@
+wrk/
+exe/ 
+src/obj/
+src/mod/ 
+extras/*aux    
+extras/*log    
+extras/*out    
+examples/gradient_mg24/results_*
+examples/gradient_mg24/out/
+examples/minima_usdb/results
+examples/minima_usdb/out/
+
+
+
+src - Save */
+24Mg/
+PRE-optimization-GUTResults_seed0_z14n6(delete)/
+
+src/taurus_tools/
+density_taurus_vap/
+src/*.py
+src/*.pdf
+/Debug/

@@ -1519,7 +1519,7 @@ do ms = 1, 4
             - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms ,a,b,i_a))
   BulkP1_HM(K,3,ms,i_r,i_a)= BulkP1_HM(K,3,ms,i_r,i_a) + &
                                 (B1_part*kNP - B2_part*kPN) !pn
-  BulkP1_HM(K,4,ms,i_r,i_a)= BulkP1_HM(K,4,ms,i_r,i_a) +
+  BulkP1_HM(K,4,ms,i_r,i_a)= BulkP1_HM(K,4,ms,i_r,i_a) + &
                                 (B1_part*kPN - B2_part*kNP) !np
 
   if (aNeQb) then
@@ -1547,8 +1547,8 @@ end subroutine compute_bulkDens4_pair
 ! Auxiliary clean the Bulk fields to be pre-calculated or get the total value !
 ! (after the sp loop calculation in calculate_expectval_density_)             !
 !-----------------------------------------------------------------------------!
-subroutine resetOrSumTotalBulkDens4Fields(reset_, i_r, i_ang)
-integer, intent(in) :: i_r, i_ang
+subroutine resetOrSumTotalBulkDens4Fields(reset_, K, i_r, i_ang)
+integer, intent(in) :: K, i_r, i_ang
 logical, intent(in) :: reset_
 integer ms
 
@@ -2011,7 +2011,7 @@ density   = zzero
 dens_pnt  = zzero
 integral_dens = zzero
 
-call resetOrSumTotalBulkDens4Fields(.TRUE., 0, 0)
+call resetOrSumTotalBulkDens4Fields(.TRUE., 0, 0, 0)
 
 if (PRNT_) then
   open(555, file='dens_pnt.gut')
@@ -2048,7 +2048,7 @@ do i_r = 1, r_dim
     dens_pnt(K,5,i_r,i_an) = dens_pnt(K,1,i_r,i_an) + dens_pnt(K,2,i_r,i_an)
     density(i_r,i_an)    = dens_pnt(K,5,i_r,i_an)
 
-    call resetOrSumTotalBulkDens4Fields(.FALSE., i_r, i_an)
+    call resetOrSumTotalBulkDens4Fields(.FALSE., K, i_r, i_an)
 
     !! [TEST] For the density to be integrated in the variable for the m.e.
     rad4Integr =  weight_R(i_r) * exp((r(K, i_r)/HO_b)**2 * (1.0+alpha_DD))
@@ -2225,9 +2225,9 @@ end function step_reconstruct_2body_timerev
 !                       ta,tb,tc,td of the sp-state.                          !
 !                       v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)   !
 !-----------------------------------------------------------------------------!
-function matrix_element_v_DD(a,b, c,d, K,ALL_ISOS) result (v_dd_val_Real)
+function matrix_element_v_DD(a,b, c,d, KK,ALL_ISOS) result (v_dd_val_Real)
 
-integer(i32), intent(in) :: a,b,c,d,K
+integer(i32), intent(in) :: a,b,c,d,KK
 logical, intent(in) :: ALL_ISOS     !! compute 3 combinations p/n instead of the
 real(r64), dimension(4) :: v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)
 
@@ -2243,9 +2243,9 @@ integer(i32) :: la, ja, ma, a_sh, ta, lb, jb, mb, b_sh, tb, bmax, &
 integer :: print_element = 0, HOspO2, skpd
 real(r64) :: v_re_1, v_re_2
 
-alpha_DD     = parameters_alp1x0x0Hx0M(K, 1)
-t3_DD_CONST  = parameters_alp1x0x0Hx0M(K, 2)
-x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K, 3)
+alpha_DD     = parameters_alp1x0x0Hx0M(KK, 1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(KK, 2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(KK, 3)
 
 HOspO2 = HOsp_dim/2
 
@@ -2302,9 +2302,9 @@ integral_factor = integral_factor * 4 * pi  ! add Lebedev norm factor
 
 do i_r = 1, r_dim
 
-  radial = weight_R(i_r) * radial_2b_sho_memo(K, a_sh, c_sh, i_r) &
-                         * radial_2b_sho_memo(K, b_sh, d_sh, i_r) &
-                         * exp((2.0d0+alpha_DD) * (r(K, i_r)/HO_b)**2)
+  radial = weight_R(i_r) * radial_2b_sho_memo(KK, a_sh, c_sh, i_r) &
+                         * radial_2b_sho_memo(KK, b_sh, d_sh, i_r) &
+                         * exp((2.0d0+alpha_DD) * (r(KK, i_r)/HO_b)**2)
   !! NOTE: the inclusion of the exponential part is necessary due the form of
   !! of the density and radial functions with the exp(-r/b^2) for stability
   !! requirement in larger shells.
@@ -2360,19 +2360,19 @@ do i_r = 1, r_dim
       if (ALL_ISOS) then
         !v_nnnn = v_pppp
         aux = radial * angular * (1-x0_DD_FACTOR) * ((aux_dir) - (aux_exch))
-        v_dd_value(1) = v_dd_value(1) + (aux * dens_alpha(i_r, i_ang))
+        v_dd_value(1) = v_dd_value(1) + (aux * dens_alpha(KK, i_r, i_ang))
         v_dd_value(4) = v_dd_value(1)
 
         ! pn pn
         aux = radial * angular * (aux_dir + (x0_DD_FACTOR*aux_exch))
-        v_dd_value(2) = v_dd_value(2) + (aux * dens_alpha(i_r, i_ang))
+        v_dd_value(2) = v_dd_value(2) + (aux * dens_alpha(KK, i_r, i_ang))
         ! pn np
         aux = radial * angular * ((x0_DD_FACTOR*aux_dir) + aux_exch)
         v_dd_value(3) = v_dd_value(3) - (aux * dens_alpha(i_r, i_ang))
       else
         ! first element is the one calculated (rest remain at zero))
         aux = radial * angular * ((delta_dir*aux_dir) - (delta_exch*aux_exch))
-        v_dd_value(1) = v_dd_value(1) + (aux * dens_alpha(i_r, i_ang))
+        v_dd_value(1) = v_dd_value(1) + (aux * dens_alpha(KK, i_r, i_ang))
       end if
 
       !! Loop for the Rearrangement term
@@ -2380,7 +2380,7 @@ do i_r = 1, r_dim
         !!!! if (dreal(aux)**2 + dimag(aux)**2 < 1.0d-15) cycle
         !! NOTE: don't put a skip for the |aux|<1e-15, afect the tolerance of
         !! the sum, it doesn't match exactly with the field calculation.
-        aux_rea = alpha_DD * integral_factor * aux * dens_alpm1(i_r, i_ang)
+        aux_rea = alpha_DD * integral_factor * aux * dens_alpm1(KK, i_r, i_ang)
 
         do kk1 = 1, HOspO2
           kk1N = kk1 + HOspO2
@@ -2388,8 +2388,8 @@ do i_r = 1, r_dim
             kk2N = kk2 +HOspO2
 
             rea = aux_rea  * rea_common_RadAng(K, kk1,kk2, i_r, i_ang)
-            rearrangement_me(K,kk1,kk2)   = rearrangement_me(K,kk1,kk2)   + rea
-            rearrangement_me(K,kk1N,kk2N) = rearrangement_me(K,kk1N,kk2N) + rea
+            rearrangement_me(KK,kk1,kk2)  = rearrangement_me(KK,kk1,kk2)  + rea
+            rearrangement_me(KK,kk1N,kk2N)= rearrangement_me(KK,kk1N,kk2N)+ rea
             enddo
         enddo
       endif
@@ -2398,11 +2398,11 @@ do i_r = 1, r_dim
 enddo    ! radial  iter_
 
 if (EVAL_EXPLICIT_FIELDS_DD) then
-  TOP = abs(maxval(real(rearrangement_me(K))))
-  LOW = abs(minval(real(rearrangement_me(K))))
+  TOP = abs(maxval(real(rearrangement_me(KK))))
+  LOW = abs(minval(real(rearrangement_me(KK))))
   if (TOP > 1.0D+10) then !((TOP < 1.0D+10).AND.(LOW > 1.E-10)) then
-      print "(A,5I3,2F20.10)", "!! REA", a,b,c,d, K&
-          minval(real(rearrangement_me(K))), maxval(real(rearrangement_me(K)))
+      print "(A,5I3,2F20.10)", "!! REA", a,b,c,d, KK&
+        minval(real(rearrangement_me(KK))), maxval(real(rearrangement_me(KK)))
   endif
 endif
 
@@ -5174,7 +5174,7 @@ function matrix_element_v_gradientDD(a,b, c,d, K) result (v_dd_val_Real)
 integer(i32), intent(in) :: a,b,c,d, K
 real(r64), dimension(4) :: v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)
 
-integer      :: K,K2,M,M2, ind_km, ind_km_q, ind_jm_a,ind_jm_b,ind_jm_c, &
+integer      :: ind_jm_a,ind_jm_b,ind_jm_c, &
                 ind_jm_d,la,lb,lc,ld, ja,jb,jc,jd, ma,mb,mc,md
 complex(r64) :: aux, radial, aux_dir, aux_exch, dens_part
 complex(r64), dimension(4) :: v_dd_value

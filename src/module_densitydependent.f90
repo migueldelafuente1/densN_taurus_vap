@@ -155,7 +155,7 @@ real(r64) :: CONST_x0_EXC_MAJO = 0.0D+00
 
 logical   :: has_sevaral_DD_tems = .FALSE.
 integer   :: number_DD_terms     = 1
-real(r64), dimension(:,:), allocatable :: parameters_alp1x0x0Hx0M  !! (alpha,t3, x0, x0H,x0M)[term]
+real(r64), dimension(9,5) :: parameters_alp1x0x0Hx0M  !! (alpha,t3, x0, x0H,x0M)[term]
 
 !! [END] DENSITY DEPENDENT MODIFICATIONS =====================================
 
@@ -479,9 +479,6 @@ subroutine set_extra_DD_parameters(aux_int, aux_float)
 integer,   intent(in) :: aux_int
 real(r64), intent(in) :: aux_float
 
-allocate(parameters_alp1x0x0Hx0M(3,5))
-parameters_alp1x0x0Hx0M = zero
-
 select case (aux_int)
   !! OPTIONS TO AVOID CALCULATING PN-DD FIELDS
   case (1)
@@ -772,6 +769,8 @@ subroutine set_densty_dependent(seedtype, itermax, proj_Mphip, proj_Mphin)
   DOING_PROJECTION = (proj_Mphip > 1).OR.(proj_Mphin > 1)
   Mphip_DD = proj_Mphip
   Mphin_DD = proj_Mphin
+
+  parameters_alp1x0x0Hx0M = zero
 
   call import_DD_parameters
   call import_Rearrange_field_if_exist

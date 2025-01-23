@@ -861,14 +861,14 @@ do a_sh = 1, HOsh_dim
         !r _lag = b *(x_R / 2+alpha)**0.5
 
         !! assert test R_ab = R_ba
-        if (dabs(two_sho_radial_functions(K,a_sh, b_sh, r(K,i_r), .FALSE.) - &
-          two_sho_radial_functions(K,b_sh,a_sh, r(K,i_r), .FALSE.)) > 1.d-12) &
+        if (dabs(two_sho_radial_functions(a_sh, b_sh, r(K,i_r), .FALSE.) - &
+          two_sho_radial_functions(b_sh,a_sh, r(K,i_r), .FALSE.)) > 1.d-12) &
           then
           print "(A,4I4,A,2D20.13)", &
               "[ASSERT ERROR] R(ab)/=R(ba) for K,a,b,i_r=",&
               K,a_sh,b_sh,i_r," Rab/Rba=", &
-              two_sho_radial_functions(K,a_sh, b_sh, r(K,i_r),.FALSE.),&
-              two_sho_radial_functions(K,b_sh, a_sh, r(K,i_r),.FALSE.)
+              two_sho_radial_functions(a_sh, b_sh, r(K,i_r),.FALSE.),&
+              two_sho_radial_functions(b_sh, a_sh, r(K,i_r),.FALSE.)
 
         endif
         if (PRINT_GUTS) then
@@ -2055,7 +2055,7 @@ do i_r = 1, r_dim
     !! [TEST] For the density to be integrated in the variable for the m.e.
     rad4Integr =  weight_R(i_r) * exp((r(K, i_r)/HO_b)**2 * (1.0+alpha_DD))
     !! [TEST] For the density to be integrated in the variable for the m.e.
-    integral_dens(K) = integral_dens(K) + (dreal(dens_pnt(K,i_r, i_an) * &
+    integral_dens(K) = integral_dens(K) + (dreal(dens_pnt(K,5, i_r,i_an) * &
                                            exp( (r(K,i_r)/HO_b)**2)  * &
                                            weight_LEB(i_an) * rad4Integr))
 

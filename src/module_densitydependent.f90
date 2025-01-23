@@ -267,6 +267,12 @@ if (exportValSpace) then
   endif
 endif
 
+parameters_alp1x0x0Hx0M(1,1) = alpha_DD
+parameters_alp1x0x0Hx0M(1,2) = t3_DD_CONST
+parameters_alp1x0x0Hx0M(1,3) = x0_DD_FACTOR
+parameters_alp1x0x0Hx0M(1,4) = CONST_x0_EXC_HEIS
+parameters_alp1x0x0Hx0M(1,5) = CONST_x0_EXC_MAJO
+
 !! Allocate here the Antoine index (for the Valence Space exporting) --------
 allocate(HOsh_ant(HOsh_dim))
 allocate(HOsp_ant(HOsp_dim))
@@ -389,21 +395,15 @@ if (EVAL_EXPLICIT_FIELDS_DD) then
 endif
 print *, ''
 
-parameters_alp1x0x0Hx0M(1,1) = alpha_DD
-parameters_alp1x0x0Hx0M(1,2) = t3_DD_CONST
-parameters_alp1x0x0Hx0M(1,3) = x0_DD_FACTOR
-parameters_alp1x0x0Hx0M(1,4) = CONST_x0_EXC_HEIS
-parameters_alp1x0x0Hx0M(1,5) = CONST_x0_EXC_MAJO
-
 print "(A)", " * Density dependent parameters imported."
 print "(A,I3)", " * Number of Gaussians in the calculation  :", number_DD_terms
 print "(A)", ""
 do K = 1, number_DD_terms
-  print "(A,I3,F12.6)", "   > Alpha exp.     ", K, parameters_alp1x0x0Hx0M(K,1)
-  print "(A,I3,F12.6)", "   > Wigner t3(MeV) ", K, parameters_alp1x0x0Hx0M(K,2)
-  print "(A,I3,F12.6)", "   > x0 Bartlett    ", K, parameters_alp1x0x0Hx0M(K,3)
-  print "(A,I3,F12.6)", "   > x0 Heisenberg  ", K, parameters_alp1x0x0Hx0M(K,4)
-  print "(A,I3,F12.6)", "   > x0 Majorana    ", K, parameters_alp1x0x0Hx0M(K,5)
+  print "(A,I3,F14.6)", "   > Alpha exp.     ", K, parameters_alp1x0x0Hx0M(K,1)
+  print "(A,I3,F14.6)", "   > Wigner t3(MeV) ", K, parameters_alp1x0x0Hx0M(K,2)
+  print "(A,I3,F14.6)", "   > x0 Bartlett    ", K, parameters_alp1x0x0Hx0M(K,3)
+  print "(A,I3,F14.6)", "   > x0 Heisenberg  ", K, parameters_alp1x0x0Hx0M(K,4)
+  print "(A,I3,F14.6)", "   > x0 Majorana    ", K, parameters_alp1x0x0Hx0M(K,5)
 enddo
 print "(A)", ""
 print "(A,2L3)", " * [OPTIONs] Calculate DD-pn parts (HF/PA) :", &
@@ -868,12 +868,13 @@ do a_sh = 1, HOsh_dim
     nb = HOsh_n(b_sh)
     lb = HOsh_l(b_sh)
 
-    if (PRINT_GUTS) write(629, fmt="(4I3,3D22.13)", advance='no') &
-      na, la, nb, lb, weight_R(i_r)
-    do i_r = 1, r_dim
-      do K = 1, number_DD_terms
+    do K = 1, number_DD_terms
+      do i_r = 1, r_dim
+        if (PRINT_GUTS) write(629, fmt="(5I3,3D22.13)", advance='no') &
+          na, la, nb, lb, K, weight_R(i_r)
+
 !        radial = two_sho_radial_functions_bench(a_sh, b_sh, r(i_r))
-        radial = two_sho_radial_functions(a_sh, b_sh, r(K,i_r), .TRUE.)
+        radial = two_sho_radial_functions(a_sh, b_sh, r(K, i_r), .TRUE.)
 
         radial_2b_sho_memo(K,a_sh, b_sh, i_r) = radial
         radial_2b_sho_memo(K,b_sh, a_sh, i_r) = radial ! a_sh=b_sh overwrites
@@ -893,9 +894,9 @@ do a_sh = 1, HOsh_dim
 
         endif
         if (PRINT_GUTS) then
-          write(629,fmt='(2D22.13)',advance='no') r(K,i_r),radial
+          write(629,fmt='(2D22.13)',advance='no') r(K, i_r),radial
         endif
-      enddo
+
 
         if (export_density) then
           radial = two_sho_radial_functions(a_sh,b_sh, r_export(i_r), .FALSE.)
@@ -903,8 +904,9 @@ do a_sh = 1, HOsh_dim
           radial_2b_sho_export_memo(a_sh, b_sh, i_r) = radial
           radial_2b_sho_export_memo(b_sh, a_sh, i_r) = radial
         end if
+      enddo
+      if (PRINT_GUTS) write(629, *) ""
     enddo
-    if (PRINT_GUTS) write(629, *) ""
   enddo
 enddo
 

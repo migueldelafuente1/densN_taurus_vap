@@ -43,7 +43,7 @@ additional options-modes    = 7
 * Integration parameters:      ------------
 ```
 representing
-$t_3^{(1)}(1+P^\sigma(B) -  P^\tau(H) - P^\tau P^\sigma(M)) \rho(r)^{1/3} + t_3^{(2)}(1 - P^\sigma(B) + P^\tau(H) - P^\tau P^\sigma(M)) \rho(r)^{1}$
+$(t_3^{(1)}=482.5)(1+P^\sigma(B) -  P^\tau(H) - P^\tau P^\sigma(M)) \rho(r)^{1/3} + (t_3^{(2)}=96)(1 - P^\sigma(B) + P^\tau(H) - P^\tau P^\sigma(M)) \rho(r)^{1}$
 
 For the moment, there is only parameters for two additional functionals. But the program is generalized, so only importing of the additional arguments must be updated.
 

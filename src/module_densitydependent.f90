@@ -237,7 +237,7 @@ end if
 VSsh_dim = aux_int
 if (exportValSpace) then
   if ((VSsh_dim.LE.HOsh_dim).OR.(evalQuasiParticleVSpace)) then
-    print "(A,I3,A)", "   ... Reading VS sh states", VSsh_dim, &
+    print "(A,I3,2A)", "   ... Reading [", VSsh_dim, "] VS sh states", &
       " (error if wrong sh dimension)"
     !print *, ""
     backspace runit

@@ -833,7 +833,7 @@ subroutine set_Radial2body_basis
 integer   :: a_sh, b_sh, i_r, na,la,nb,lb, K
 real(r64) :: radial, x
 
-allocate(radial_2b_sho_memo(HOsh_dim,HOsh_dim,r_dim))
+allocate(radial_2b_sho_memo(number_DD_terms,HOsh_dim,HOsh_dim,r_dim))
 if (export_density) then
   allocate(radial_2b_sho_export_memo(HOsh_dim,HOsh_dim,r_dim))
 end if
@@ -861,12 +861,14 @@ do a_sh = 1, HOsh_dim
         !r _lag = b *(x_R / 2+alpha)**0.5
 
         !! assert test R_ab = R_ba
-        if (dabs(two_sho_radial_functions(K,a_sh, b_sh, r(i_r), .FALSE.) - &
-          two_sho_radial_functions(K,b_sh,a_sh,r(i_r), .FALSE.)) > 1.d-12) then
-          print "(A,3I4,A,2D20.13)","[ASSERT ERROR] R(ab)/=R(ba) for a,b,i_r=",&
-             a_sh,b_sh,i_r," Rab/Rba=", &
-             two_sho_radial_functions(K,a_sh, b_sh, r(i_r),.FALSE.),&
-             two_sho_radial_functions(K,b_sh, a_sh, r(i_r),.FALSE.)
+        if (dabs(two_sho_radial_functions(K,a_sh, b_sh, r(K,i_r), .FALSE.) - &
+          two_sho_radial_functions(K,b_sh,a_sh, r(K,i_r), .FALSE.)) > 1.d-12) &
+          then
+          print "(A,4I4,A,2D20.13)", &
+              "[ASSERT ERROR] R(ab)/=R(ba) for K,a,b,i_r=",&
+              K,a_sh,b_sh,i_r," Rab/Rba=", &
+              two_sho_radial_functions(K,a_sh, b_sh, r(K,i_r),.FALSE.),&
+              two_sho_radial_functions(K,b_sh, a_sh, r(K,i_r),.FALSE.)
 
         endif
         if (PRINT_GUTS) then
@@ -1051,16 +1053,16 @@ allocate(AngFunctDUAL_HF(4, HOsp_dim/2, HOsp_dim/2, angular_dim))
 allocate(AngFunctDUAL_P1(4, HOsp_dim/2, HOsp_dim/2, angular_dim))
 allocate(AngFunctDUAL_P2(4, HOsp_dim/2, HOsp_dim/2, angular_dim))
 
-allocate(BulkHF(5,4, r_dim, angular_dim))
-allocate(BulkP1(5,4, r_dim, angular_dim))
-allocate(BulkP2(5,4, r_dim, angular_dim))
+allocate(BulkHF(number_DD_terms,5,4, r_dim, angular_dim))
+allocate(BulkP1(number_DD_terms,5,4, r_dim, angular_dim))
+allocate(BulkP2(number_DD_terms,5,4, r_dim, angular_dim))
 
 AngFunctDUAL_HF = zzero
 AngFunctDUAL_P1 = zzero
 AngFunctDUAL_P2 = zzero
 
 if (has_HEIS_MAJO_TERMS) then
-  allocate(BulkP1_HM(5,4, r_dim, angular_dim))
+  allocate(BulkP1_HM(number_DD_terms,5,4, r_dim, angular_dim))
   BulkP1_HM = zzero
 endif
 
@@ -1889,9 +1891,9 @@ end subroutine update_densities_DD
 ! the criteria is to choose the root such as: (z)^alpha = (z*)^alpha          !
 !                                                                             !
 !-----------------------------------------------------------------------------!
-subroutine choose_riemann_fold_density(i_r, i_an)
+subroutine choose_riemann_fold_density(K, i_r, i_an)
 
-integer, intent(in) :: i_r, i_an
+integer, intent(in) :: K, i_r, i_an
 integer      :: i, j
 real(r64)    :: dens_R, dens_A, dens_Aa, dens_Ra, x1, x2, y1, y2, th1, th2
 complex(r64) :: x
@@ -1938,7 +1940,7 @@ do i = 0, alpha_DD_frac(2) - 1
     !! condition for z*=z mathch (impossible)
     if (abs(x1 - x2) + abs(y1 - y2) .LT. 1.0d-4) then
 
-      dens_alpha(i_r,i_an) = dCMPLX(dens_Ra * x1, dens_Ra * y1)
+      dens_alpha(K,i_r,i_an) = dCMPLX(dens_Ra * x1, dens_Ra * y1)
 
       th1 = (dens_A + 2 * pi * i) * (alpha_DD - 1.0d0)
       x1  = dcos(th1)
@@ -1949,7 +1951,7 @@ do i = 0, alpha_DD_frac(2) - 1
       if (dreal(x)**2 + dimag(x)**2 .gt. 1.0D+30) then
         x = dCMPLX(1.0D+30*x1, 1.0D+30*y1)
       endif
-      dens_alpm1(i_r,i_an) = x
+      dens_alpm1(K,i_r,i_an) = x
 
       return
     endif
@@ -2066,7 +2068,7 @@ do i_r = 1, r_dim
         print *, " !!! [WARNING] density is imaginary=",imag(density(i_r,i_an))
       endif
 
-      call choose_riemann_fold_density(i_r, i_an)
+      call choose_riemann_fold_density(K, i_r, i_an)
 
     else
       dens_alpha(K,i_r,i_an) = dreal(dens_pnt(K,5,i_r,i_an)) ** alpha_DD
@@ -2082,11 +2084,11 @@ do i_r = 1, r_dim
         dens_pnt(K,5,i_r,i_an), dens_alpha(K,i_r,i_an), dens_alpm1(K,i_r,i_an)
       do msp =1, 4
         write(556,fmt="(3I5,A,3F9.5,A)", advance='no') i_r, i_an, msp, ',', &
-          r(i_r), cos_th(i_an), phi(i_an), ','
+          r(K,i_r), cos_th(i_an), phi(i_an), ','
         write(551,fmt="(3I5,A,3F9.5,A)", advance='no') i_r, i_an, msp, ',', &
-          r(i_r), cos_th(i_an), phi(i_an), ','
+          r(K,i_r), cos_th(i_an), phi(i_an), ','
         write(552,fmt="(3I5,A,3F9.5,A)", advance='no') i_r, i_an, msp, ',', &
-          r(i_r), cos_th(i_an), phi(i_an), ','
+          r(K,i_r), cos_th(i_an), phi(i_an), ','
 
         write(556,fmt='(5(F22.15,SP,F20.15,"j"))') &
           BulkHF(K,1,msp,i_r,i_an), BulkHF(K,2,msp,i_r,i_an), &
@@ -2132,6 +2134,7 @@ if ((iteration.eq.0).OR.(MOD(iteration + 1, ITER_PRNT).EQ.0)) then
 print "(A,F13.9,A)", "      *A* ",dreal(integral_dens(K)),"  <dens(r)> approx"
 endif
 enddo
+deallocate(integral_dens)
 
 end subroutine calculate_expectval_density
 
@@ -2582,14 +2585,14 @@ do aa = 1, WBsp_dim / 2 ! (prev = HOsp_dim)
               write(uth8) me_VGRc(1), me_VGRc(2), me_VGRc(3), me_VGRc(4)
               !! evaluate the rearrangement
               do K = 1, number_DD_terms
-                rearrang_field(K,a ,c ) = rearrang_field(K,a ,c ) + &
+                rearrang_field(a ,c ) = rearrang_field(a ,c ) + &
                   (me_VGRc(1)*dens_rhoLR(d ,b ) + me_VGRc(2)*dens_rhoLR(dn,bn))
-                rearrang_field(K,an,cn) = rearrang_field(K,an,cn) + &
-                    (me_VGRc(2)*dens_rhoLR(d ,b ) + me_VGRc(4)*dens_rhoLR(dn,bn))
-                rearrang_field(K,a ,cn) = rearrang_field(K,a ,cn) + &
-                    (me_VGRc(3)*dens_rhoLR(d ,bn))
-                rearrang_field(K,an,c ) = rearrang_field(K,an,c ) + &
-                    (me_VGRc(3)*dens_rhoLR(dn,b ))
+                rearrang_field(an,cn) = rearrang_field(an,cn) + &
+                  (me_VGRc(2)*dens_rhoLR(d ,b ) + me_VGRc(4)*dens_rhoLR(dn,bn))
+                rearrang_field(a ,cn) = rearrang_field(a ,cn) + &
+                  (me_VGRc(3)*dens_rhoLR(d ,bn))
+                rearrang_field(an,c ) = rearrang_field(an,c ) + &
+                  (me_VGRc(3)*dens_rhoLR(dn,b ))
               end do
             endif
           endif
@@ -4607,7 +4610,7 @@ do i = 1, ndim
   end do
 end do
 call reeval_pairing_fields_after_cutoff(.FALSE., hspLR, deltaLR, deltaRL, &
-                                        deltaLR_DD, deltaRL_DD, ndim)
+                                        deltaLR_DD, deltaRL_DD, K, ndim)
 
 !print "(A,I5)", " -cutoff subroutine DONE, iter =", iteration
 end subroutine cutoff_by_hspfield_matrix
@@ -4625,7 +4628,7 @@ complex(r64), dimension(ndim,ndim) :: hspLR, deltaLR, deltaRL
 real(r64),    dimension(ndim,ndim) :: BU_gammaRR_DD
 complex(r64), dimension(ndim,ndim) :: gammaLR, gammaLR_DD,deltaLR_DD,deltaRL_DD
 
-integer :: a,b,a_sh,b_sh,spO2,i_r,i_an, ms, Tab, K
+integer :: a,b,a_sh,b_sh,spO2,i_r,i_an, ms, Tab
 complex(r64), dimension(4) :: int_hf, int_pa ! all arrays are for (pp, nn, pn, np)
 complex(r64), dimension(4) :: aux, aux_PE, aux_pair
 complex(r64) :: int_rea, auxRea
@@ -4648,17 +4651,13 @@ do i_r = 1, r_dim
     enddo   ! do a
 
     do ms = 1, 4
-    do K = 1, number_DD_terms
       BulkP1(K,5,ms,i_r,i_an)=BulkP1(K,1,ms,i_r,i_an) + BulkP1(K,2,ms,i_r,i_an)
       BulkP2(K,5,ms,i_r,i_an)=BulkP2(K,1,ms,i_r,i_an) + BulkP2(K,2,ms,i_r,i_an)
-    enddo !K
     enddo
   enddo
 enddo
 
-do K = 1, number_DD_terms
-  call calculate_common_rearrang_bulkFields(K)
-enddo
+call calculate_common_rearrang_bulkFields(K)
 
 if (only_bulk_fields) return  !! ========================================
 
@@ -4672,12 +4671,6 @@ gammaLR    = zzero
 gammaLR_DD = zzero
 deltaLR_DD = zzero
 deltaRL_DD = zzero
-
-do K = 1, number_DD_terms
-
-alpha_DD     = parameters_alp1x0x0Hx0M(K,1)
-t3_DD_CONST  = parameters_alp1x0x0Hx0M(K,2)
-x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K,3)
 
 !!! Evaluate the pairing fields ----------------------
 !! Note :: Remember that radial functions already have the factor 1/b**3
@@ -4750,7 +4743,6 @@ do a = 1, spO2
   enddo
 enddo
 
-enddo ! K- loop
 ! recover the gamma BU.
 do a = 1, ndim
   do b = 1, ndim

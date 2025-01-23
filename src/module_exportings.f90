@@ -3015,13 +3015,13 @@ open( 614, file='export_density_xyz.txt') !====================================
 write(614, fmt='(A,3I5,F10.6)') &
                 "RDim,CThDim,PhiDim,b lenght_", &
                 r_dim, theta_dim, phi_dim, HO_b
-write(614, fmt='(A,A,A)') " i_r i_t i_p     X               Y               Z",&
-"               REAL(densZ)     IMAG(densZ)     REAL(densN)     IMAG(densZ)",&
-"     Weight_prod"
+write(614, fmt='(A,A,A)') " i_r i_t i_p     X               Y",&
+    "               Z               REAL(densZ)     IMAG(densZ)",&
+    "     REAL(densN)     IMAG(densZ)     Weight_prod"
 do i_r = 1, r_dim
   print '(I3,A,I3,A,I3,A,I3,A,I3,A,I3,A,F16.8,A,F12.8,A,F12.8)', &
           i_r,'/',r_dim,'r_', i_th,'/',theta_dim,'th_', i_phi,'/',phi_dim, &
-          'ph :: (r=',r(i_r),',t=', theta(i_th), ',p=', phi(i_phi)
+          'ph :: (r=',r_export(i_r),',t=', theta(i_th), ',p=', phi(i_phi)
 
   time_ij    = zero
   call cpu_time(st_1)

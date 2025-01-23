@@ -389,12 +389,18 @@ if (EVAL_EXPLICIT_FIELDS_DD) then
 endif
 print *, ''
 
+parameters_alp1x0x0Hx0M(1,1) = alpha_DD
+parameters_alp1x0x0Hx0M(1,2) = t3_DD_CONST
+parameters_alp1x0x0Hx0M(1,3) = x0_DD_FACTOR
+parameters_alp1x0x0Hx0M(1,4) = CONST_x0_EXC_HEIS
+parameters_alp1x0x0Hx0M(1,5) = CONST_x0_EXC_MAJO
+
 print "(A)", " * Density dependent parameters imported."
 print "(A,I3)", " * Number of Gaussians in the calculation  :", number_DD_terms
 print "(A)", ""
 do K = 1, number_DD_terms
-  print "(A,I3,F12.6)", "   > Wigner t3(MeV) ", K, parameters_alp1x0x0Hx0M(K,1)
-  print "(A,I3,F12.6)", "   > Alpha exp.     ", K, parameters_alp1x0x0Hx0M(K,2)
+  print "(A,I3,F12.6)", "   > Alpha exp.     ", K, parameters_alp1x0x0Hx0M(K,1)
+  print "(A,I3,F12.6)", "   > Wigner t3(MeV) ", K, parameters_alp1x0x0Hx0M(K,2)
   print "(A,I3,F12.6)", "   > x0 Bartlett    ", K, parameters_alp1x0x0Hx0M(K,3)
   print "(A,I3,F12.6)", "   > x0 Heisenberg  ", K, parameters_alp1x0x0Hx0M(K,4)
   print "(A,I3,F12.6)", "   > x0 Majorana    ", K, parameters_alp1x0x0Hx0M(K,5)

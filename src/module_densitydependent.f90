@@ -1996,7 +1996,7 @@ integer, intent(in) :: iopt
 complex(r64), intent(in) :: overlap
 
 integer :: a,b, a_sh, b_sh, spO2, ITER_PRNT
-integer :: i_r=1, i_an=1, msp
+integer :: i_r=1, i_an=1, msp, K
 
 real(r64) :: radial_part, dens_R, dens_A, rad4Integr, dens_Aa,dens_Ra
 complex(r64) :: sum_, sum_test, diff, x
@@ -2368,7 +2368,7 @@ do i_r = 1, r_dim
         v_dd_value(2) = v_dd_value(2) + (aux * dens_alpha(KK, i_r, i_ang))
         ! pn np
         aux = radial * angular * ((x0_DD_FACTOR*aux_dir) + aux_exch)
-        v_dd_value(3) = v_dd_value(3) - (aux * dens_alpha(i_r, i_ang))
+        v_dd_value(3) = v_dd_value(3) - (aux * dens_alpha(KK,i_r, i_ang))
       else
         ! first element is the one calculated (rest remain at zero))
         aux = radial * angular * ((delta_dir*aux_dir) - (delta_exch*aux_exch))
@@ -2398,11 +2398,11 @@ do i_r = 1, r_dim
 enddo    ! radial  iter_
 
 if (EVAL_EXPLICIT_FIELDS_DD) then
-  TOP = abs(maxval(real(rearrangement_me(KK))))
-  LOW = abs(minval(real(rearrangement_me(KK))))
+  TOP = abs(maxval(real(rearrangement_me)))
+  LOW = abs(minval(real(rearrangement_me)))
   if (TOP > 1.0D+10) then !((TOP < 1.0D+10).AND.(LOW > 1.E-10)) then
       print "(A,5I3,2F20.10)", "!! REA", a,b,c,d, KK,&
-        minval(real(rearrangement_me(KK))), maxval(real(rearrangement_me(KK)))
+        minval(real(rearrangement_me)), maxval(real(rearrangement_me))
   endif
 endif
 
@@ -3147,7 +3147,7 @@ complex(r64) :: aux_rea, Fcomb, aux_reaN
                 !f0, f1, f2, f3, & ! field_abcd, f_abdc, f_bacd, f_badc
                 !f4, f5, f6, f7, & ! field_cdab, f_cdba, f_dcab, f_dcba
 complex(r64), dimension(0:7) :: f
-integer   :: HOspo2, it, k1, k2, a, b, c, d, k1N, k2N
+integer   :: HOspo2, it, k1, k2, a, b, c, d, k1N, k2N, K
 integer   :: perm
 real(r64) :: rea_h, f2r, sign_tr, rea_hN
 logical :: exist_
@@ -5372,9 +5372,9 @@ end subroutine calculate_energy_field_laplacian
 !                       v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)   !
 !             in this case, a,b,c,d are <= HOsp_dim / 2                       !
 !-----------------------------------------------------------------------------!
-function matrix_element_pseudoRearrangement_v1(a,b, c,d) result (v_dd_val_Real)
+function matrix_element_pseudoRearrangement_v1(a,b,c,d,K) result(v_dd_val_Real)
 
-integer(i32), intent(in) :: a,b,c,d
+integer(i32), intent(in) :: a,b,c,d, K
 real(r64), dimension(4) :: v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)
 
 integer      :: ms, tt
@@ -5397,6 +5397,10 @@ if ((a.GT.HOspO2).OR.(b.GT.HOspO2).OR.(c.GT.HOspO2).OR.(d.GT.HOspO2)) then
   return
 endif
 
+alpha_DD     = parameters_alp1x0x0Hx0M(K,1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K,2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K,3)
+
 integral_factor = t3_DD_CONST
 !! NOTE :: Remember that radial functions already have the factor 1/b**3
 integral_factor = integral_factor * 0.5d0 * (HO_b**3)
@@ -5407,7 +5411,7 @@ const_1 = 4.0d0 * alpha_DD
 const_4 = alpha_DD * (alpha_DD - 1.0d0)
 
 do i_r = 1, r_dim
-  radial = weight_R(i_r) * exp((alpha_DD + 2.0d0) * (r(i_r) / HO_b)**2)
+  radial = weight_R(i_r) * exp((alpha_DD + 2.0d0) * (r(K,i_r) / HO_b)**2)
   do i_a = 1, angular_dim
 
     !! first term, (derivative of each rho_matrix)
@@ -5416,25 +5420,25 @@ do i_r = 1, r_dim
     aux3 = zzero
     do tt = 1, 3 !! pnnp = 0, tt=4
 
-      aux1(tt) = dens_pnt(5,i_r,i_a) - (x0_DD_FACTOR * dens_pnt(tt,i_r,i_a))
-      aux1(tt) = aux1(tt) * rea_common_RadAng(c,d, i_r, i_a)
+      aux1(tt) = dens_pnt(K,5,i_r,i_a) - (x0_DD_FACTOR*dens_pnt(K,tt,i_r,i_a))
+      aux1(tt) = aux1(tt) * rea_common_RadAng(K,c,d, i_r, i_a)
 
       do ms = 1, 4
-        aux2(tt) = aux2(tt) + (((x0_DD_FACTOR * BulkHF(5, ms, i_r, i_a) * &
+        aux2(tt) = aux2(tt) + (((x0_DD_FACTOR * BulkHF(K,5, ms, i_r, i_a) * &
                                  AngFunctDUAL_HF(ms, b, d, i_a)) - &
-                                (BulkHF(tt,ms,i_r,i_a) * &
+                                (BulkHF(K,tt,ms,i_r,i_a) * &
                                  AngFunctDUAL_HF(ms, b, d, i_a))) * &
-                               radial_2b_sho_memo(b_sh, d_sh, i_r) )
+                               radial_2b_sho_memo(K,b_sh, d_sh, i_r) )
       enddo
 
-      aux3(tt) = (aux1(tt) + aux2(tt)) * rea_common_RadAng(a,c, i_r, i_a)
-      aux3(tt) = aux3(tt) * const_1 * dens_alpm1(i_r, i_a)
+      aux3(tt) = (aux1(tt) + aux2(tt)) * rea_common_RadAng(K,a,c, i_r, i_a)
+      aux3(tt) = aux3(tt) * const_1 * dens_alpm1(K,i_r, i_a)
 
     enddo
     !! second term. (derivative of the inner rho^(alpha-1) )
-    aux4 = rea_common_RadAng(b,d, i_r, i_a) * rea_common_RadAng(a,c, i_r, i_a)
-    aux4 = aux4 * REACommonFields(i_r, i_a)
-    aux4 = aux4 * dens_alpm1(i_r, i_a) / dens_pnt(5, i_r, i_a)
+    aux4 = rea_common_RadAng(K,b,d,i_r,i_a) * rea_common_RadAng(K,a,c,i_r,i_a)
+    aux4 = aux4 * REACommonFields(K,i_r,i_a)
+    aux4 = aux4 * dens_alpm1(K,i_r, i_a) / dens_pnt(K,5, i_r, i_a)
     aux4 = aux4 * const_4
 
     angular = weight_LEB(i_a)
@@ -5472,9 +5476,9 @@ end function matrix_element_pseudoRearrangement_v1
 ! ## NOTE     pnnp = - pnpn(2)  and nppn = - npnp(3)
 !             in this case, a,b,c,d are <= HOsp_dim / 2                       !
 !-----------------------------------------------------------------------------!
-function matrix_element_pseudoRearrangement_v2(a,b, c,d) result (v_dd_val_Real)
+function matrix_element_pseudoRearrangement_v2(a,b,c,d,K) result (v_dd_val_Real)
 
-integer(i32), intent(in) :: a,b,c,d
+integer(i32), intent(in) :: a,b,c,d, K
 real(r64), dimension(4) :: v_dd_val_Real !! pppp(1), pnpn(2), npnp(3), nnnn(4)
 
 integer      :: ms, tt, t2
@@ -5497,6 +5501,10 @@ if ((a.GT.HOspO2).OR.(b.GT.HOspO2).OR.(c.GT.HOspO2).OR.(d.GT.HOspO2)) then
   return
 endif
 
+alpha_DD     = parameters_alp1x0x0Hx0M(K,1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K,2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K,3)
+
 integral_factor = t3_DD_CONST
 !! NOTE :: Remember that radial functions already have the factor 1/b**3
 integral_factor = integral_factor * 0.5d0 * (HO_b**3)
@@ -5507,7 +5515,7 @@ const_1 = 4.0d0 * alpha_DD
 const_5 = alpha_DD * (alpha_DD - 1.0d0)
 
 do i_r = 1, r_dim
-  radial = weight_R(i_r) * exp((alpha_DD + 2.0d0) * (r(i_r) / HO_b)**2)
+  radial = weight_R(i_r) * exp((alpha_DD + 2.0d0) * (r(K,i_r) / HO_b)**2)
   do i_a = 1, angular_dim
     angular = weight_LEB(i_a)
     !! first term, (derivative of each rho_matrix)
@@ -5517,21 +5525,22 @@ do i_r = 1, r_dim
     aux4 = zzero
 
     !! second term, share functions for the direct term
-    aux5pn = (rea_common_RadAng(a,c,i_r,i_a) * rea_common_RadAng(b,d,i_r,i_a))
-    aux5pp = aux5pn - (rea_common_RadAng(a,d, i_r,i_a) * &
-                       rea_common_RadAng(b,c, i_r,i_a))
+    aux5pn = (rea_common_RadAng(K,a,c,i_r,i_a) *&
+              rea_common_RadAng(K,b,d,i_r,i_a))
+    aux5pp = aux5pn - (rea_common_RadAng(K,a,d, i_r,i_a) * &
+                       rea_common_RadAng(K,b,c, i_r,i_a))
 
     do tt = 1, 4  !! pppp  pnpn npnp nnnn
       select case(tt)
       case (1,4)
-        aux1(tt) = aux5pp * dens_pnt(5, i_r, i_a)
+        aux1(tt) = aux5pp * dens_pnt(K,5, i_r, i_a)
         t2 = 1 + ((tt - 1) / 3)
-        aux3(tt) = - x0_DD_FACTOR * dens_pnt(t2, i_r,i_a) * aux5pp
+        aux3(tt) = - x0_DD_FACTOR * dens_pnt(K,t2, i_r,i_a) * aux5pp
         aux5 = aux5pp
       case (2,3) ! pnpn, npnp
-        aux1(tt) = dens_pnt(5, i_r, i_a) * aux5pn
+        aux1(tt) = dens_pnt(K,5, i_r, i_a) * aux5pn
         t2 = 4  - tt
-        aux3(tt) = - x0_DD_FACTOR * dens_pnt(t2, i_r,i_a) * aux5pn
+        aux3(tt) = - x0_DD_FACTOR * dens_pnt(K,t2, i_r,i_a) * aux5pn
         aux5 = aux5pn
       end select
 
@@ -5539,43 +5548,43 @@ do i_r = 1, r_dim
       do ms = 1, 4
         select case (tt) ! ------------------
           case (1,4)
-            aux = ((rea_common_RadAng(a,c, i_r,i_a) * &
+            aux = ((rea_common_RadAng(K,a,c, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, d, i_a) * &
                     radial_2b_sho_memo(b_sh, d_sh, i_r)) - &
-                   (rea_common_RadAng(a,d, i_r,i_a) * &
+                   (rea_common_RadAng(K,a,d, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, c, i_a) * &
-                    radial_2b_sho_memo(b_sh, c_sh, i_r)))
+                    radial_2b_sho_memo(K,b_sh, c_sh, i_r)))
 
-            aux2(tt) = aux2(tt) + (x0_DD_FACTOR * BulkHF(5, ms, i_r, i_a) * aux)
+            aux2(tt) = aux2(tt) + (x0_DD_FACTOR * BulkHF(K,5,ms,i_r,i_a) * aux)
 
-            aux = ((rea_common_RadAng(a,c, i_r,i_a) * &
+            aux = ((rea_common_RadAng(K,a,c, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, d, i_a) * &
                     radial_2b_sho_memo(b_sh, d_sh, i_r)) - &
-                   (rea_common_RadAng(a,d, i_r,i_a) * &
+                   (rea_common_RadAng(K,a,d, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, c, i_a) * &
-                    radial_2b_sho_memo(b_sh, c_sh, i_r)))
+                    radial_2b_sho_memo(K,b_sh, c_sh, i_r)))
             t2 = 1 + ((tt - 1) / 3)
-            aux4(tt) = aux2(tt) - (x0_DD_FACTOR * BulkHF(t2,ms, i_r, i_a) * aux)
+            aux4(tt) = aux2(tt) - (x0_DD_FACTOR * BulkHF(K,t2,ms,i_r,i_a) * aux)
           case (2,3)
-            aux = (rea_common_RadAng(a,c, i_r,i_a) * &
+            aux = (rea_common_RadAng(K,a,c, i_r,i_a) * &
                    AngFunctDUAL_HF(ms, b, d, i_a) * &
-                   radial_2b_sho_memo(b_sh, d_sh, i_r))
+                   radial_2b_sho_memo(K,b_sh, d_sh, i_r))
 
-            aux2(tt) = aux2(tt) + (x0_DD_FACTOR * BulkHF(5, ms, i_r, i_a) * aux)
+            aux2(tt) = aux2(tt) + (x0_DD_FACTOR * BulkHF(K,5,ms,i_r, i_a) * aux)
 
-            aux = (rea_common_RadAng(a,c, i_r,i_a) * &
+            aux = (rea_common_RadAng(K,a,c, i_r,i_a) * &
                    AngFunctDUAL_HF(ms, b, d, i_a) * &
-                   radial_2b_sho_memo(b_sh, d_sh, i_r))
+                   radial_2b_sho_memo(K,b_sh, d_sh, i_r))
             t2 = 4  - tt
-            aux4(tt) = aux4(tt) - (BulkHF(t2,ms, i_r, i_a) * aux)
+            aux4(tt) = aux4(tt) - (BulkHF(K,t2,ms, i_r, i_a) * aux)
         end select ! ------------------
       enddo ! ms
 
-      term1(tt) = const_1 * dens_alpm1(i_r, i_a) * &
+      term1(tt) = const_1 * dens_alpm1(K,i_r, i_a) * &
                   (aux1(tt) + aux2(tt) + aux3(tt) + aux4(tt))
       !! second term. (derivative of the inner rho^(alpha-1) )
-      term2(tt) = const_5 * aux5 * REACommonFields(i_r,i_a)&
-                   * dens_alpm1(i_r,i_a) / dens_pnt(5, i_r,i_a)
+      term2(tt) = const_5 * aux5 * REACommonFields(K,i_r,i_a)&
+                   * dens_alpm1(K,i_r,i_a) / dens_pnt(K,5, i_r,i_a)
 
       !! Final integral
       v_dd_value(tt) = v_dd_value(tt) + (radial * angular &

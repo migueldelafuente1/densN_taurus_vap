@@ -154,7 +154,7 @@ integer(i32) :: a, b, aa, a2, b2, a_min, a_max, b_min, b_max, ialloc=0
 integer      :: a_ant,b_ant, t, tt, a_sh, b_sh, a_sh_vs, la,lb,b_sh_vs,&
                 J, J_min, J_max, M,&
                 ja,jb, ma,mb,ta,tb, ma2,mb2,mta2,mtb2, ja_prev, jb_prev,&
-                i_jm, i_sab, Na, Nb, spO2, NormAB, delta_ab, CORE_NUMBER
+                i_jm, i_sab, Na, Nb, spO2, NormAB, delta_ab, CORE_NUMBER, K
 real(r64) :: aux_t, aux_v, E_core, cgc1, cgc2, cgc_t1, cgc_t2, h2int
 complex(r64) :: fachw, faccom, fackin, factor_1com
 
@@ -267,11 +267,12 @@ do a = 1, spO2
           call ClebschGordan(HOsp_2j (a2), HOsp_2j (b2),2*J, &
                              HOsp_2mj(a2), HOsp_2mj(b2),2*M, cgc2)
 
-          Vdd_dec = matrix_element_v_DD(a, b, a2, b2, .TRUE.)
-
-          do tt = 1, 4
-            v_temp(tt) = v_temp(tt) + cgc1 * cgc2 * Vdd_dec(tt)
-          end do
+          do K = 1, number_DD_terms
+            Vdd_dec = matrix_element_v_DD(a, b, a2, b2, K, .TRUE.)
+            do tt = 1, 4
+              v_temp(tt) = v_temp(tt) + cgc1 * cgc2 * Vdd_dec(tt)
+            end do
+          end do ! K loop
 
         end do
       end do

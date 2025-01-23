@@ -60,7 +60,8 @@ real(r64), dimension(:), allocatable   :: weight_R
 real(r64), dimension(:,:), allocatable :: x_Leb
 real(r64), dimension(:), allocatable   :: weight_LEB
 
-real(r64), dimension(:), allocatable  :: r, r_export
+real(r64), dimension(:,:),allocatable :: r   ! r(part, i_r)
+real(r64), dimension(:), allocatable  :: r_export
 real(r64), dimension(:), allocatable  :: theta, theta_export
 real(r64), dimension(:), allocatable  :: cos_th, cos_th_export
 real(r64), dimension(:), allocatable  :: phi, phi_export
@@ -68,15 +69,15 @@ real(r64), dimension(:), allocatable  :: phi, phi_export
 complex(r64), dimension(:,:), allocatable :: rhoLR, kappaRL, kappaLR
 
 complex(r64), dimension(:,:), allocatable :: density, density_export !(ir, iang)
-complex(r64), dimension(:,:), allocatable :: dens_alpha, dens_alpm1
-complex(r64), dimension(:,:,:), allocatable :: dens_pnt   !(pp, nn, pn, np, total;i_r,iang)
+complex(r64), dimension(:,:,:), allocatable :: dens_alpha, dens_alpm1!(K, ir, iang)
+complex(r64), dimension(:,:,:,:), allocatable :: dens_pnt   !(K; pp, nn, pn, np, total;i_r,iang)
 complex(r64), dimension(:,:), allocatable :: density_export_p, density_export_n
 complex(r64), dimension(:,:), allocatable :: pairdens_export
 complex(r64), dimension(:,:), allocatable :: pairdens_export_n,pairdens_export_p
 
 !! Pre-calculated saved functions and coefficients
-real(r64), dimension(:, :, :), allocatable, save :: radial_2b_sho_memo        !(ish1, ish2, ir)
-real(r64), dimension(:, :, :), allocatable, save :: radial_2b_sho_export_memo !(ish1, ish2, ir)
+real(r64), dimension(:,:,:,:), allocatable, save :: radial_2b_sho_memo      !(K, ish1, ish2, ir)
+real(r64), dimension(:,:,:), allocatable, save :: radial_2b_sho_export_memo !(ish1, ish2, ir)
 
 complex(r64), dimension(:,:), allocatable,   save :: sph_harmonics_memo ! Y_(km_indx, i_ang)
 complex(r64), dimension(:,:,:), allocatable, save :: sphharmDUAL_memo   ! Y*(a) Y(b)
@@ -85,22 +86,22 @@ real(r64), dimension(:,:,:), allocatable,    save :: dens_Y_KM_me       ! <a|Y_k
 complex(r64), dimension(:,:,:,:), allocatable, save :: AngFunctDUAL_HF ! CGa CGb Y*(a) Y (b)
 complex(r64), dimension(:,:,:,:), allocatable, save :: AngFunctDUAL_P1 ! CGa CGb Y (a) Y (b)
 complex(r64), dimension(:,:,:,:), allocatable, save :: AngFunctDUAL_P2 ! CGa CGb Y*(a) Y*(b)
-complex(r64), dimension(:,:,:,:), allocatable, save :: BulkHF ! (tt,msms',r,ang) DEF:Sum AngFunctDUAL_HF * rho [pp,nn,pn,np, tot]  [(++,+-,-+,--)]
-complex(r64), dimension(:,:,:,:), allocatable, save :: BulkP1 ! (tt,msms',r,ang) DEF:Sum AngFunctDUAL_P1(msms') - AngFunctDUAL_P1(ms'ms) * kappaLR (p, n), pn=function xM xH
-complex(r64), dimension(:,:,:,:), allocatable, save :: BulkP2 ! (tt,msms',r,ang) DEF:Sum AngFunctDUAL_P2 * kappaRL
-complex(r64), dimension(:,:,:,:), allocatable, save :: BulkP1_HM ! (tt,msms',r,ang) DEF:Sum AngFunctDUAL_P1(msms') - AngFunctDUAL_P1(ms'ms) * kappaLR (p, n), pn=function xM xH
+complex(r64), dimension(:,:,:,:,:), allocatable, save :: BulkHF ! (K, tt,msms',r,ang) DEF:Sum AngFunctDUAL_HF * rho [pp,nn,pn,np, tot]  [(++,+-,-+,--)]
+complex(r64), dimension(:,:,:,:,:), allocatable, save :: BulkP1 ! (K, tt,msms',r,ang) DEF:Sum AngFunctDUAL_P1(msms') - AngFunctDUAL_P1(ms'ms) * kappaLR (p, n), pn=function xM xH
+complex(r64), dimension(:,:,:,:,:), allocatable, save :: BulkP2 ! (K, tt,msms',r,ang) DEF:Sum AngFunctDUAL_P2 * kappaRL
+complex(r64), dimension(:,:,:,:,:), allocatable, save :: BulkP1_HM ! (K, tt,msms',r,ang) DEF:Sum AngFunctDUAL_P1(msms') - AngFunctDUAL_P1(ms'ms) * kappaLR (p, n), pn=function xM xH
 
-complex(r64), dimension(:,:), allocatable     :: rearrangement_me  !(isp1, isp2)
-complex(r64), dimension(:,:), allocatable     :: rearrang_field    !(isp1, isp2)
-complex(r64), dimension(:,:,:,:), allocatable :: rea_common_RadAng !(isp1,isp2, ir,iang)
-complex(r64), dimension(:,:), allocatable     :: REACommonFields   !(ir, iang))
-complex(r64), dimension(:,:), allocatable     :: fixed_rearrang_field
+complex(r64), dimension(:,:,:), allocatable     :: rearrangement_me  !(K,isp1, isp2)
+complex(r64), dimension(:,:), allocatable       :: rearrang_field    !(isp1, isp2)
+complex(r64), dimension(:,:,:,:,:), allocatable :: rea_common_RadAng !(K, isp1,isp2, ir,iang)
+complex(r64), dimension(:,:,:), allocatable     :: REACommonFields   !(K, ir, iang))
+complex(r64), dimension(:,:), allocatable       :: fixed_rearrang_field
 
 !!! Arrays related to Differentiated density.
 logical   :: EXPORT_GRAD_DD = .FALSE. ! export the Laplacian-approximation of the Rearrangement
 logical   :: EXPORT_PREA_DD = .TRUE.  ! export the Field-derivation of the rearrange m.e.
-real(r64), dimension(:,:,:,:), allocatable  :: radial_1b_diff_memo ! (ish, i_n[-1:1], j_l[-1:1], ir)
-complex(r64), dimension(:,:,:), allocatable :: partial_dens        ! (-1,0,1,2:total ,ir,iang)
+real(r64),  dimension(:,:,:,:,:), allocatable :: radial_1b_diff_memo ! (K;ish, i_n[-1:1], j_l[-1:1], ir)
+complex(r64), dimension(:,:,:,:), allocatable :: partial_dens        ! (K;-1,0,1,2:total ,ir,iang)
 real(r64), dimension(:,:), allocatable      :: hamil_GradDD_H2_byT ! 2-body grad Dens  (pppp,pnpn,pnnp,nnnn)
 
 real(r64) :: last_HFB_energy
@@ -154,7 +155,7 @@ real(r64) :: CONST_x0_EXC_MAJO = 0.0D+00
 
 logical   :: has_sevaral_DD_tems = .FALSE.
 integer   :: number_DD_terms     = 1
-real(r64), dimension(:,:), allocatable :: parameters_1x0x0Hx0M  !! (t3,x0, x0H,x0M)[term]
+real(r64), dimension(:,:), allocatable :: parameters_alp1x0x0Hx0M  !! (alpha,t3, x0, x0H,x0M)[term]
 
 !! [END] DENSITY DEPENDENT MODIFICATIONS =====================================
 
@@ -212,6 +213,7 @@ EVAL_EXPLICIT_FIELDS_DD = aux_int.EQ.1
 
 read(runit,formatEE) str_, t3_DD_CONST
 read(runit,formatEE) str_, x0_DD_FACTOR
+hasX0M1 = abs(x0_DD_FACTOR - 1.0d+0) > 1.0d-6
 read(runit,formatEE) str_, alpha_DD
 read(runit,formatST) str_
 read(runit,formatI3) str_, r_dim
@@ -302,7 +304,7 @@ d_r = R_MAX / (r_dim - 1)
 
 allocate(x_R(r_dim))
 allocate(weight_R(r_dim))
-allocate(r(r_dim))
+allocate(r(number_DD_terms, r_dim))
 allocate(r_export(r_dim))
 print *,           '   Density dep. Interaction values  '
 print *,           '-----------------------------------------------'
@@ -387,8 +389,6 @@ if (EVAL_EXPLICIT_FIELDS_DD) then
 endif
 print *, ''
 
-hasX0M1 = abs(x0_DD_FACTOR - 1.0d+0) > 1.0d-6
-
 print "(A)", " * Density dependent parameters imported."
 
 print "(A,2L3)", " * [OPTIONs] Calculate DD-pn parts (HF/PA) :", &
@@ -470,7 +470,8 @@ subroutine set_extra_DD_parameters(aux_int, aux_float)
 integer,   intent(in) :: aux_int
 real(r64), intent(in) :: aux_float
 
-
+allocate(parameters_alp1x0x0Hx0M(3,5))
+parameters_alp1x0x0Hx0M = zero
 
 select case (aux_int)
   !! OPTIONS TO AVOID CALCULATING PN-DD FIELDS
@@ -522,15 +523,14 @@ select case (aux_int)
   case(31)
     has_HEIS_MAJO_TERMS  = .TRUE.
     CONST_x0_EXC_HEIS = aux_float
-    print "(A,F12.9)", " > Exchange (spin):       Heisenberg=", CONST_x0_EXC_HEIS
+    print "(A,F12.9)", " > Exchange (spin):       Heisenberg=",CONST_x0_EXC_HEIS
   case(32)
     has_HEIS_MAJO_TERMS  = .TRUE.
     CONST_x0_EXC_MAJO = aux_float
-    print "(A,F12.9)", " > Exchange (spin-isospin): Majorana=", CONST_x0_EXC_MAJO
+    print "(A,F12.9)", " > Exchange (spin-isospin): Majorana=",CONST_x0_EXC_MAJO
   case(33:42)
-    print "(2A,I4,F15.6)"," [ERROR] Several DD term implementation is not ",&
-      "valid, Program to do it in repository [LINK]"
-    STOP
+    has_sevaral_DD_tems = .TRUE.
+    call set_multiDDparameters(aux_int, aux_float)
   case default
     print "(2A,I4,F15.6)"," [ERROR] Invalid option SetUp Extra-argument case",&
       " not valid. Got:", aux_int, aux_float
@@ -538,13 +538,79 @@ select case (aux_int)
 end select
 
 if (has_sevaral_DD_tems)then
-  parameters_1x0x0Hx0M(1,1) = t3_DD_CONST
-  parameters_1x0x0Hx0M(1,2) = x0_DD_FACTOR
-  parameters_1x0x0Hx0M(1,3) = CONST_x0_EXC_HEIS
-  parameters_1x0x0Hx0M(1,4) = CONST_x0_EXC_MAJO
+  parameters_alp1x0x0Hx0M(1,1) = alpha_DD
+  parameters_alp1x0x0Hx0M(1,2) = t3_DD_CONST
+  parameters_alp1x0x0Hx0M(1,3) = x0_DD_FACTOR
+  parameters_alp1x0x0Hx0M(1,4) = CONST_x0_EXC_HEIS
+  parameters_alp1x0x0Hx0M(1,5) = CONST_x0_EXC_MAJO
 end if
 end subroutine set_extra_DD_parameters
 
+!-----------------------------------------------------------------------------!
+! Subroutine set Up for the multiple DD terms inside extra_DD_parameters      !
+!-----------------------------------------------------------------------------!
+subroutine set_multiDDparameters(aux_int, aux_float)
+integer,   intent(in) :: aux_int
+real(r64), intent(in) :: aux_float
+
+select case(aux_int)
+  case(33:37)
+    if (number_DD_terms .EQ. 1) number_DD_terms = 2
+
+!!! --------------------------------
+select case(aux_int)
+  case (33)
+    parameters_alp1x0x0Hx0M(number_DD_terms,2) = aux_float
+    print "(A,F12.9)", " > Wigner  t3 (2) =", aux_float
+  case (34)
+    parameters_alp1x0x0Hx0M(number_DD_terms,3) = aux_float
+    print "(A,F12.9)", " > Bartlett x0(2) =", aux_float
+    hasX0M1 = hasX0M1 .OR. abs(aux_float - 1.0d+0) > 1.0d-6
+  case (35)
+    has_HEIS_MAJO_TERMS  = .TRUE.
+    parameters_alp1x0x0Hx0M(number_DD_terms,4) = aux_float
+    print "(A,F12.9)", " > Heisenberg (2) =", aux_float
+  case (36)
+    has_HEIS_MAJO_TERMS  = .TRUE.
+    parameters_alp1x0x0Hx0M(number_DD_terms,5) = aux_float
+    print "(A,F12.9)", " > Majorana   (2) =", aux_float
+  case (37)
+    parameters_alp1x0x0Hx0M(number_DD_terms,1) = aux_float
+    print "(A,F12.9)", " > Alpha exp. (2) =", aux_float
+end select
+!!! --------------------------------
+  case(38:42)
+    if (number_DD_terms .EQ. 1) then
+      print *, "  [ERROR] Do not set a 3rd DD term without setting the 2nd one"
+      STOP
+    end if
+    if (number_DD_terms .EQ. 2) number_DD_terms = 3
+!!! --------------------------------
+select case(aux_int)
+  case (38)
+    parameters_alp1x0x0Hx0M(number_DD_terms,2) = aux_float
+    print "(A,F12.9)", " > Wigner  t3 (3) =", aux_float
+  case (39)
+    parameters_alp1x0x0Hx0M(number_DD_terms,3) = aux_float
+    print "(A,F12.9)", " > Bartlett x0(3) =", aux_float
+    hasX0M1 = hasX0M1 .OR. abs(aux_float - 1.0d+0) > 1.0d-6
+  case (40)
+    has_HEIS_MAJO_TERMS  = .TRUE.
+    parameters_alp1x0x0Hx0M(number_DD_terms,4) = aux_float
+    print "(A,F12.9)", " > Heisenberg (3) =", aux_float
+  case (41)
+    has_HEIS_MAJO_TERMS  = .TRUE.
+    parameters_alp1x0x0Hx0M(number_DD_terms,5) = aux_float
+    print "(A,F12.9)", " > Majorana   (3) =", aux_float
+  case (42)
+    parameters_alp1x0x0Hx0M(number_DD_terms,1) = aux_float
+    print "(A,F12.9)", " > Alpha exp. (3) =", aux_float
+end select
+!!! --------------------------------
+
+end select
+
+end subroutine set_multiDDparameters
 
 !-----------------------------------------------------------------------------!
 ! Subroutine to identify the index of the valence space from the basis        !
@@ -613,12 +679,14 @@ end subroutine set_valence_space_to_export
 !-----------------------------------------------------------------------------!
 subroutine set_integration_grid
 
-integer :: i_r, i_th, i_phi, i
+integer :: i_r, i_th, i_phi, i, k
 real(r64) :: sum_, x, y
 
 call GaussLaguerre(x_R, weight_R, r_dim, 0.5d+00)
 do i_r = 1, r_dim
-  r(i_r)        = HO_b * sqrt(x_R(i_r) / (2.0 + alpha_DD))
+  do k = 1, number_DD_terms
+    r(k, i_r) = HO_b * sqrt(x_R(i_r) / (2.0 + parameters_alp1x0x0Hx0M(k, 1))) ! alpha
+  end do
   r_export(i_r) = HO_b * sqrt(x_R(i_r))
 enddo
 
@@ -722,34 +790,34 @@ subroutine set_densty_dependent(seedtype, itermax, proj_Mphip, proj_Mphin)
 end subroutine set_densty_dependent
 
 subroutine set_allocate_density_arrays
+integer :: sp2
+sp2 = HOsp_dim /2
 
-  allocate(rhoLR  (HOsp_dim,HOsp_dim))
-  allocate(kappaLR(HOsp_dim,HOsp_dim))
-  allocate(kappaRL(HOsp_dim,HOsp_dim))
+allocate(rhoLR  (HOsp_dim,HOsp_dim))
+allocate(kappaLR(HOsp_dim,HOsp_dim))
+allocate(kappaRL(HOsp_dim,HOsp_dim))
 
-  allocate(density (r_dim, angular_dim))
-  allocate(dens_pnt(5, r_dim, angular_dim))
-  allocate(dens_alpha(r_dim, angular_dim))
-  allocate(dens_alpm1(r_dim, angular_dim))
+allocate(density (r_dim, angular_dim))
+allocate(dens_pnt(number_DD_terms, 5, r_dim, angular_dim))
+allocate(dens_alpha(number_DD_terms, r_dim, angular_dim))
+allocate(dens_alpm1(number_DD_terms, r_dim, angular_dim))
 
-  if (export_density) then
-    allocate(density_export(r_dim, angular_dim))
-    allocate(density_export_p(r_dim, angular_dim))
-    allocate(density_export_n(r_dim, angular_dim))
-    allocate(pairdens_export(r_dim, angular_dim))
-    allocate(pairdens_export_n(r_dim, angular_dim))
-    allocate(pairdens_export_p(r_dim, angular_dim))
-  endif
+if (export_density) then
+  allocate(density_export(r_dim, angular_dim))
+  allocate(density_export_p(r_dim, angular_dim))
+  allocate(density_export_n(r_dim, angular_dim))
+  allocate(pairdens_export(r_dim, angular_dim))
+  allocate(pairdens_export_n(r_dim, angular_dim))
+  allocate(pairdens_export_p(r_dim, angular_dim))
+endif
 
-  allocate(rearrangement_me(HOsp_dim, HOsp_dim))
-  !allocate(rearrangement_me(HOsp_dim/2, HOsp_dim/2))
-  allocate(rearrang_field(HOsp_dim, HOsp_dim))
-  allocate(rea_common_RadAng(HOsp_dim /2, HOsp_dim /2, r_dim, angular_dim))
-  allocate(REACommonFields(r_dim, angular_dim))
+allocate(rearrangement_me(number_DD_terms,HOsp_dim, HOsp_dim))
+allocate(rearrang_field(HOsp_dim, HOsp_dim))
+allocate(rea_common_RadAng(number_DD_terms, sp2, sp2, r_dim, angular_dim))
+allocate(REACommonFields(number_DD_terms, r_dim, angular_dim))
 
-  !! CUTOFF ELEMENTS
-  lambdaFer_DD = zero
-
+!! CUTOFF ELEMENTS
+lambdaFer_DD = zero
 
 end subroutine set_allocate_density_arrays
 
@@ -762,7 +830,7 @@ end subroutine set_allocate_density_arrays
 !-----------------------------------------------------------------------------!
 subroutine set_Radial2body_basis
 
-integer   :: a_sh, b_sh, i_r, na,la,nb,lb
+integer   :: a_sh, b_sh, i_r, na,la,nb,lb, K
 real(r64) :: radial, x
 
 allocate(radial_2b_sho_memo(HOsh_dim,HOsh_dim,r_dim))
@@ -771,6 +839,7 @@ if (export_density) then
 end if
 
 if (PRINT_GUTS) open(629, file='R_radial2B_wf.gut')
+
 do a_sh = 1, HOsh_dim
   na = HOsh_n(a_sh)
   la = HOsh_l(a_sh)
@@ -778,29 +847,32 @@ do a_sh = 1, HOsh_dim
     nb = HOsh_n(b_sh)
     lb = HOsh_l(b_sh)
 
-    if (PRINT_GUTS) write(629, fmt="(4I3)", advance='no') na, la, nb, lb
+    if (PRINT_GUTS) write(629, fmt="(4I3,3D22.13)", advance='no') &
+      na, la, nb, lb, weight_R(i_r)
     do i_r = 1, r_dim
+      do K = 1, number_DD_terms
 !        radial = two_sho_radial_functions_bench(a_sh, b_sh, r(i_r))
-        radial = two_sho_radial_functions(a_sh, b_sh, r(i_r), .TRUE.)
+        radial = two_sho_radial_functions(a_sh, b_sh, r(K,i_r), .TRUE.)
 
-        radial_2b_sho_memo(a_sh, b_sh, i_r) = radial
-        radial_2b_sho_memo(b_sh, a_sh, i_r) = radial ! a_sh=b_sh overwrites
+        radial_2b_sho_memo(K,a_sh, b_sh, i_r) = radial
+        radial_2b_sho_memo(K,b_sh, a_sh, i_r) = radial ! a_sh=b_sh overwrites
 
         ! Radial grid for Laguerre
         !r _lag = b *(x_R / 2+alpha)**0.5
 
         !! assert test R_ab = R_ba
-        if (dabs(two_sho_radial_functions(a_sh, b_sh, r(i_r), .FALSE.) - &
-          two_sho_radial_functions(b_sh, a_sh, r(i_r), .FALSE.)) > 1.d-12) then
+        if (dabs(two_sho_radial_functions(K,a_sh, b_sh, r(i_r), .FALSE.) - &
+          two_sho_radial_functions(K,b_sh,a_sh,r(i_r), .FALSE.)) > 1.d-12) then
           print "(A,3I4,A,2D20.13)","[ASSERT ERROR] R(ab)/=R(ba) for a,b,i_r=",&
              a_sh,b_sh,i_r," Rab/Rba=", &
-             two_sho_radial_functions(a_sh, b_sh, r(i_r), .FALSE.),&
-             two_sho_radial_functions(b_sh, a_sh, r(i_r), .FALSE.)
+             two_sho_radial_functions(K,a_sh, b_sh, r(i_r),.FALSE.),&
+             two_sho_radial_functions(K,b_sh, a_sh, r(i_r),.FALSE.)
 
         endif
         if (PRINT_GUTS) then
-          write(629,fmt='(3D22.13)',advance='no') r(i_r), radial, weight_R(i_r)
+          write(629,fmt='(2D22.13)',advance='no') r(K,i_r),radial
         endif
+      enddo
 
         if (export_density) then
           radial = two_sho_radial_functions(a_sh,b_sh, r_export(i_r), .FALSE.)
@@ -812,6 +884,8 @@ do a_sh = 1, HOsh_dim
     if (PRINT_GUTS) write(629, *) ""
   enddo
 enddo
+
+
 
 if (PRINT_GUTS) close(629)
 
@@ -1239,7 +1313,7 @@ subroutine compute_bulkDens4_hf(a, b, a_sh, b_sh, i_r, i_a, overlap)
 integer, intent(in)      :: a, b, a_sh, b_sh, i_r, i_a
 complex(r64), intent(in) :: overlap
 
-integer      :: spO2, par_ind,    ms,ms2, a_n, b_n
+integer      :: spO2, par_ind,    ms,ms2, a_n, b_n, K
 complex(r64) :: roP, roN, rPN, rNP, roPt, roNt, rPNt, rNPt, &
                 A_part, aux, sum_, radial_ab
 logical      :: aNeQb
@@ -1258,7 +1332,9 @@ aNeQb = kdelta(a, b).ne.1
 a_n   = a + spO2
 b_n   = b + spO2
 
-radial_ab = radial_2b_sho_memo(a_sh, b_sh, i_r) / overlap
+do K = 1, number_DD_terms
+
+radial_ab = radial_2b_sho_memo(K,a_sh, b_sh, i_r) / overlap
 
 roP  = radial_ab * rhoLR  (b  ,a)
 roN  = radial_ab * rhoLR  (b_n,a_n)
@@ -1282,17 +1358,17 @@ end if
 
 !! compute the direct bulk densities
 sum_ = AngFunctDUAL_HF(1,a,b,i_a) + AngFunctDUAL_HF(4,a,b,i_a)
-dens_pnt(1,i_r,i_a) = dens_pnt(1,i_r,i_a) + (sum_ * roP)
-dens_pnt(2,i_r,i_a) = dens_pnt(2,i_r,i_a) + (sum_ * roN)
-dens_pnt(3,i_r,i_a) = dens_pnt(3,i_r,i_a) + (sum_ * rPN)
-dens_pnt(4,i_r,i_a) = dens_pnt(4,i_r,i_a) + (sum_ * rNP)
+dens_pnt(K,1,i_r,i_a) = dens_pnt(K,1,i_r,i_a) + (sum_ * roP)
+dens_pnt(K,2,i_r,i_a) = dens_pnt(K,2,i_r,i_a) + (sum_ * roN)
+dens_pnt(K,3,i_r,i_a) = dens_pnt(K,3,i_r,i_a) + (sum_ * rPN)
+dens_pnt(K,4,i_r,i_a) = dens_pnt(K,4,i_r,i_a) + (sum_ * rNP)
 !! compute the direct bulk densities
 if (aNeQb) then
   sum_ = AngFunctDUAL_HF(1,b,a,i_a) + AngFunctDUAL_HF(4,b,a,i_a)
-  dens_pnt(1,i_r,i_a) = dens_pnt(1,i_r,i_a) + (sum_ * roPt)
-  dens_pnt(2,i_r,i_a) = dens_pnt(2,i_r,i_a) + (sum_ * roNt)
-  dens_pnt(3,i_r,i_a) = dens_pnt(3,i_r,i_a) + (sum_ * rPNt)
-  dens_pnt(4,i_r,i_a) = dens_pnt(4,i_r,i_a) + (sum_ * rNPt)
+  dens_pnt(K,1,i_r,i_a) = dens_pnt(K,1,i_r,i_a) + (sum_ * roPt)
+  dens_pnt(K,2,i_r,i_a) = dens_pnt(K,2,i_r,i_a) + (sum_ * roNt)
+  dens_pnt(K,3,i_r,i_a) = dens_pnt(K,3,i_r,i_a) + (sum_ * rPNt)
+  dens_pnt(K,4,i_r,i_a) = dens_pnt(K,4,i_r,i_a) + (sum_ * rNPt)
 endif
 
 do ms = 1, 4
@@ -1304,19 +1380,20 @@ do ms = 1, 4
   end select
 
   A_part = AngFunctDUAL_HF(ms2,a,b,i_a)
-  BulkHF(1,ms,i_r,i_a) = BulkHF(1,ms,i_r,i_a) + (A_part * roP) !pp
-  BulkHF(2,ms,i_r,i_a) = BulkHF(2,ms,i_r,i_a) + (A_part * roN) !nn
-  BulkHF(3,ms,i_r,i_a) = BulkHF(3,ms,i_r,i_a) + (A_part * rPN) !pn
-  BulkHF(4,ms,i_r,i_a) = BulkHF(4,ms,i_r,i_a) + (A_part * rNP) !np
+  BulkHF(K,1,ms,i_r,i_a) = BulkHF(K,1,ms,i_r,i_a) + (A_part * roP) !pp
+  BulkHF(K,2,ms,i_r,i_a) = BulkHF(K,2,ms,i_r,i_a) + (A_part * roN) !nn
+  BulkHF(K,3,ms,i_r,i_a) = BulkHF(K,3,ms,i_r,i_a) + (A_part * rPN) !pn
+  BulkHF(K,4,ms,i_r,i_a) = BulkHF(K,4,ms,i_r,i_a) + (A_part * rNP) !np
 
   if (aNeQb) then
     A_part = AngFunctDUAL_HF(ms2,b,a,i_a)
-    BulkHF(1,ms,i_r,i_a) = BulkHF(1,ms,i_r,i_a) + (A_part * roPt) !pp
-    BulkHF(2,ms,i_r,i_a) = BulkHF(2,ms,i_r,i_a) + (A_part * roNt) !nn
-    BulkHF(3,ms,i_r,i_a) = BulkHF(3,ms,i_r,i_a) + (A_part * rPNt) !pn
-    BulkHF(4,ms,i_r,i_a) = BulkHF(4,ms,i_r,i_a) + (A_part * rNPt) !np
+    BulkHF(K,1,ms,i_r,i_a) = BulkHF(K,1,ms,i_r,i_a) + (A_part * roPt) !pp
+    BulkHF(K,2,ms,i_r,i_a) = BulkHF(K,2,ms,i_r,i_a) + (A_part * roNt) !nn
+    BulkHF(K,3,ms,i_r,i_a) = BulkHF(K,3,ms,i_r,i_a) + (A_part * rPNt) !pn
+    BulkHF(K,4,ms,i_r,i_a) = BulkHF(K,4,ms,i_r,i_a) + (A_part * rNPt) !np
   endif
 enddo
+end do !K loop
 
 end subroutine compute_bulkDens4_hf
 
@@ -1325,7 +1402,7 @@ subroutine compute_bulkDens4_pair(a, b, a_sh, b_sh, i_r, i_a, overlap)
 integer, intent(in)      :: a, b, a_sh, b_sh, i_r, i_a
 complex(r64), intent(in) :: overlap
 
-integer      :: spO2, par_ind,    ms,ms2, a_n, b_n
+integer      :: spO2, par_ind,    ms,ms2, a_n, b_n, K
 complex(r64) :: kaP,kaN,kaCcP, kaCcN,kPN,kNP,kCcNP,kCcPN, &
                 kaPt,kaNt,kaCcPt, kaCcNt,kPNt,kNPt, &
                 kCcNPt,kCcPNt,B1_part,B2_part, aux, sum_, radial_ab
@@ -1345,7 +1422,9 @@ aNeQb = kdelta(a, b).ne.1
 a_n   = a + spO2
 b_n   = b + spO2
 
-radial_ab = radial_2b_sho_memo(a_sh, b_sh, i_r) / overlap
+do K = 1, number_DD_terms
+
+radial_ab = radial_2b_sho_memo(K,a_sh, b_sh, i_r) / overlap
 
 kaP    = radial_ab * kappaLR(a  ,b)
 kaN    = radial_ab * kappaLR(a_n,b_n)
@@ -1388,74 +1467,80 @@ do ms = 1, 4
   end select
 
   B1_part = (AngFunctDUAL_P1(ms,a,b,i_a) - AngFunctDUAL_P1(ms2,a,b,i_a))
-  BulkP1(1,ms,i_r,i_a) = BulkP1(1,ms,i_r,i_a) + (B1_part * kaP) !pp
-  BulkP1(2,ms,i_r,i_a) = BulkP1(2,ms,i_r,i_a) + (B1_part * kaN) !nn
+  BulkP1(K,1,ms,i_r,i_a) = BulkP1(K,1,ms,i_r,i_a) + (B1_part * kaP) !pp
+  BulkP1(K,2,ms,i_r,i_a) = BulkP1(K,2,ms,i_r,i_a) + (B1_part * kaN) !nn
 
   B1_part = AngFunctDUAL_P1(ms ,a,b,i_a) &
              + (x0_DD_FACTOR*AngFunctDUAL_P1(ms2,a,b,i_a))
   B2_part = AngFunctDUAL_P1(ms2,a,b,i_a) &
              + (x0_DD_FACTOR*AngFunctDUAL_P1(ms ,a,b,i_a)) ! reuse of the aux variable
-  BulkP1(3,ms,i_r,i_a) = BulkP1(3,ms,i_r,i_a) + (B1_part*kPN - B2_part*kNP) !pn
-  BulkP1(4,ms,i_r,i_a) = BulkP1(4,ms,i_r,i_a) + (B1_part*kNP - B2_part*kPN) !np
+  BulkP1(K,3,ms,i_r,i_a) = BulkP1(K,3,ms,i_r,i_a) + (B1_part*kPN - B2_part*kNP) !pn
+  BulkP1(K,4,ms,i_r,i_a) = BulkP1(K,4,ms,i_r,i_a) + (B1_part*kNP - B2_part*kPN) !np
   !! BulkP1_** are  common for the paring and rearrangement fields respectively.
 
   B2_part = AngFunctDUAL_P2(ms,a,b,i_a)
-  BulkP2(1,ms,i_r,i_a) = BulkP2(1,ms,i_r,i_a) + (B2_part * kaCcP) !pp
-  BulkP2(2,ms,i_r,i_a) = BulkP2(2,ms,i_r,i_a) + (B2_part * kaCcN) !nn
-  BulkP2(3,ms,i_r,i_a) = BulkP2(3,ms,i_r,i_a) + (B2_part * kCcPN) !pn
-  BulkP2(4,ms,i_r,i_a) = BulkP2(4,ms,i_r,i_a) + (B2_part * kCcNP) !np
+  BulkP2(K,1,ms,i_r,i_a) = BulkP2(K,1,ms,i_r,i_a) + (B2_part * kaCcP) !pp
+  BulkP2(K,2,ms,i_r,i_a) = BulkP2(K,2,ms,i_r,i_a) + (B2_part * kaCcN) !nn
+  BulkP2(K,3,ms,i_r,i_a) = BulkP2(K,3,ms,i_r,i_a) + (B2_part * kCcPN) !pn
+  BulkP2(K,4,ms,i_r,i_a) = BulkP2(K,4,ms,i_r,i_a) + (B2_part * kCcNP) !np
 
   if (aNeQb) then
     B1_part = (AngFunctDUAL_P1(ms,b,a,i_a) - AngFunctDUAL_P1(ms2,b,a,i_a))
-    BulkP1(1,ms,i_r,i_a) = BulkP1(1,ms,i_r,i_a) + (B1_part * kaPt) !pp
-    BulkP1(2,ms,i_r,i_a) = BulkP1(2,ms,i_r,i_a) + (B1_part * kaNt) !nn
+    BulkP1(K,1,ms,i_r,i_a) = BulkP1(K,1,ms,i_r,i_a) + (B1_part * kaPt) !pp
+    BulkP1(K,2,ms,i_r,i_a) = BulkP1(K,2,ms,i_r,i_a) + (B1_part * kaNt) !nn
 
     B1_part = AngFunctDUAL_P1(ms ,b,a,i_a) &
                + (x0_DD_FACTOR*AngFunctDUAL_P1(ms2,b,a,i_a))
     B2_part = AngFunctDUAL_P1(ms2,b,a,i_a) &
                + (x0_DD_FACTOR*AngFunctDUAL_P1(ms ,b,a,i_a)) ! reuse of the aux variable
-    BulkP1(3,ms,i_r,i_a) = BulkP1(3,ms,i_r,i_a) + (B1_part*kPNt - B2_part*kNPt) !pn
-    BulkP1(4,ms,i_r,i_a) = BulkP1(4,ms,i_r,i_a) + (B1_part*kNPt - B2_part*kPNt) !np
+    BulkP1(K,3,ms,i_r,i_a) = BulkP1(K,3,ms,i_r,i_a) + &
+                                (B1_part*kPNt - B2_part*kNPt) !pn
+    BulkP1(K,4,ms,i_r,i_a) = BulkP1(K,4,ms,i_r,i_a) + &
+                                (B1_part*kNPt - B2_part*kPNt) !np
     !! BulkP1_** are  common for the paring and rearrangement fields respectively.
 
     B2_part = AngFunctDUAL_P2(ms,b,a,i_a)
-    BulkP2(1,ms,i_r,i_a) = BulkP2(1,ms,i_r,i_a) + (B2_part * kaCcPt) !pp
-    BulkP2(2,ms,i_r,i_a) = BulkP2(2,ms,i_r,i_a) + (B2_part * kaCcNt) !nn
-    BulkP2(3,ms,i_r,i_a) = BulkP2(3,ms,i_r,i_a) + (B2_part * kCcPNt) !pn
-    BulkP2(4,ms,i_r,i_a) = BulkP2(4,ms,i_r,i_a) + (B2_part * kCcNPt) !np
+    BulkP2(K,1,ms,i_r,i_a) = BulkP2(K,1,ms,i_r,i_a) + (B2_part * kaCcPt) !pp
+    BulkP2(K,2,ms,i_r,i_a) = BulkP2(K,2,ms,i_r,i_a) + (B2_part * kaCcNt) !nn
+    BulkP2(K,3,ms,i_r,i_a) = BulkP2(K,3,ms,i_r,i_a) + (B2_part * kCcPNt) !pn
+    BulkP2(K,4,ms,i_r,i_a) = BulkP2(K,4,ms,i_r,i_a) + (B2_part * kCcNPt) !np
   endif
 
   !! EXTENSION FOR HEISENBERG - MAJORANA PAIRING FIELDS
   if (has_HEIS_MAJO_TERMS) then
 
   B1_part = (AngFunctDUAL_P1(ms,a,b,i_a) - AngFunctDUAL_P1(ms2,a,b,i_a))
-  BulkP1_HM(1,ms,i_r,i_a) = BulkP1_HM(1,ms,i_r,i_a) + (B1_part * kaP) !pp
-  BulkP1_HM(2,ms,i_r,i_a) = BulkP1_HM(2,ms,i_r,i_a) + (B1_part * kaN) !nn
+  BulkP1_HM(K,1,ms,i_r,i_a) = BulkP1_HM(K,1,ms,i_r,i_a) + (B1_part * kaP) !pp
+  BulkP1_HM(K,2,ms,i_r,i_a) = BulkP1_HM(K,2,ms,i_r,i_a) + (B1_part * kaN) !nn
 
   B1_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms ,a,b,i_a) &
             - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms2,a,b,i_a))
   B2_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms2,a,b,i_a) &
             - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms ,a,b,i_a))
-  BulkP1_HM(3,ms,i_r,i_a)= BulkP1_HM(3,ms,i_r,i_a) + (B1_part*kNP - B2_part*kPN) !pn
-  BulkP1_HM(4,ms,i_r,i_a)= BulkP1_HM(4,ms,i_r,i_a) + (B1_part*kPN - B2_part*kNP) !np
+  BulkP1_HM(K,3,ms,i_r,i_a)= BulkP1_HM(K,3,ms,i_r,i_a) + &
+                                (B1_part*kNP - B2_part*kPN) !pn
+  BulkP1_HM(K,4,ms,i_r,i_a)= BulkP1_HM(K,4,ms,i_r,i_a) +
+                                (B1_part*kPN - B2_part*kNP) !np
 
   if (aNeQb) then
   B1_part = (AngFunctDUAL_P1(ms,b,a,i_a) - AngFunctDUAL_P1(ms2,b,a,i_a))
-  BulkP1_HM(1,ms,i_r,i_a) = BulkP1_HM(1,ms,i_r,i_a) + (B1_part * kaPt) !pp
-  BulkP1_HM(2,ms,i_r,i_a) = BulkP1_HM(2,ms,i_r,i_a) + (B1_part * kaNt) !nn
+  BulkP1_HM(K,1,ms,i_r,i_a) = BulkP1_HM(K,1,ms,i_r,i_a) + (B1_part * kaPt) !pp
+  BulkP1_HM(K,2,ms,i_r,i_a) = BulkP1_HM(K,2,ms,i_r,i_a) + (B1_part * kaNt) !nn
 
   B1_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms ,b,a,i_a) &
             - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms2,b,a,i_a))
   B2_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms2,b,a,i_a) &
             - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms ,b,a,i_a))
-  BulkP1_HM(3,ms,i_r,i_a)= BulkP1_HM(3,ms,i_r,i_a) + (B1_part*kNPt-B2_part*kPNt) !pn
-  BulkP1_HM(4,ms,i_r,i_a)= BulkP1_HM(4,ms,i_r,i_a) + (B1_part*kPNt-B2_part*kNPt) !np
+  BulkP1_HM(K,3,ms,i_r,i_a)= BulkP1_HM(K,3,ms,i_r,i_a) + &
+                              (B1_part*kNPt-B2_part*kPNt) !pn
+  BulkP1_HM(K,4,ms,i_r,i_a)= BulkP1_HM(K,4,ms,i_r,i_a) + &
+                              (B1_part*kPNt-B2_part*kNPt) !np
   endif
 
   endif
 
 enddo
-
+enddo ! K loop
 end subroutine compute_bulkDens4_pair
 
 !-----------------------------------------------------------------------------!
@@ -1473,16 +1558,17 @@ if (reset_) then
   BulkP2    = zzero
   if (has_HEIS_MAJO_TERMS) BulkP1_HM = zzero
 else
-  do ms = 1, 4
-    ! BulkHF(ms,i_r,i_ang) = BulkHF_pp(ms,i_r,i_ang) + BulkHF_nn(ms,i_r,i_ang)
-    BulkHF(5,ms,i_r,i_ang) = BulkHF(1,ms,i_r,i_ang) + BulkHF(2,ms,i_r,i_ang)
-    BulkP1(5,ms,i_r,i_ang) = BulkP1(1,ms,i_r,i_ang) + BulkP1(2,ms,i_r,i_ang)
-    BulkP2(5,ms,i_r,i_ang) = BulkP2(1,ms,i_r,i_ang) + BulkP2(2,ms,i_r,i_ang)
-    if (has_HEIS_MAJO_TERMS) then
-      BulkP1_HM(5,ms,i_r,i_ang) =   BulkP1_HM(1,ms,i_r,i_ang) &
-                                  + BulkP1_HM(2,ms,i_r,i_ang)
-    endif
-  enddo
+
+do ms = 1, 4
+  ! BulkHF(ms,i_r,i_ang) = BulkHF_pp(ms,i_r,i_ang) + BulkHF_nn(ms,i_r,i_ang)
+  BulkHF(K,5,ms,i_r,i_ang)= BulkHF(K,1,ms,i_r,i_ang) + BulkHF(K,2,ms,i_r,i_ang)
+  BulkP1(K,5,ms,i_r,i_ang)= BulkP1(K,1,ms,i_r,i_ang) + BulkP1(K,2,ms,i_r,i_ang)
+  BulkP2(K,5,ms,i_r,i_ang)= BulkP2(K,1,ms,i_r,i_ang) + BulkP2(K,2,ms,i_r,i_ang)
+  if (has_HEIS_MAJO_TERMS) then
+    BulkP1_HM(K,5,ms,i_r,i_ang)=   BulkP1_HM(K,1,ms,i_r,i_ang) &
+                                 + BulkP1_HM(K,2,ms,i_r,i_ang)
+  endif
+enddo
 endif
 
 end subroutine resetOrSumTotalBulkDens4Fields
@@ -1498,7 +1584,7 @@ end subroutine resetOrSumTotalBulkDens4Fields
 subroutine set_rearrangement_RadAng_fucntions
 
 integer :: a,b,aN,bN, l1,l2,j1,j2, mj1,mj2, ind_jm_1,ind_jm_2, K, M
-integer :: i_r, i_ang, ind_km, spO2
+integer :: i_r, i_ang, ind_km, spO2, K
 real(r64)    :: radial
 complex(r64) :: ang_rea
 
@@ -1521,8 +1607,9 @@ do a = 1, spO2 ! avoid pn states
     ind_jm_2 = angular_momentum_index(j2, mj2, .TRUE.)
     bN = b + spO2
 
+    do K = 1, number_DD_terms
     do i_r = 1, r_dim
-      radial = radial_2b_sho_memo(HOsp_sh(a), HOsp_sh(b),i_r)
+      radial = radial_2b_sho_memo(K, HOsp_sh(a), HOsp_sh(b),i_r)
 
       do i_ang = 1, angular_dim
 !        !! --  Process with spatial 2- body harmonics  -----------------------!
@@ -1539,15 +1626,15 @@ do a = 1, spO2 ! avoid pn states
 !        !! ------------------------------------------------------------------ !
         ang_rea = AngFunctDUAL_HF(1,a,b,i_ang) + AngFunctDUAL_HF(4,a,b,i_ang)
 
-        rea_common_RadAng( a, b, i_r,i_ang) = radial * ang_rea
+        rea_common_RadAng(K, a, b, i_r,i_ang) = radial * ang_rea
 !        rea_common_RadAng(aN,bN, i_r,i_ang) = radial * ang_rea
         if (a == b) cycle
-        rea_common_RadAng( b, a, i_r,i_ang) = radial * conjg(ang_rea)
+        rea_common_RadAng(K, b, a, i_r,i_ang) = radial * conjg(ang_rea)
 !        rea_common_RadAng(bN,aN, i_r,i_ang) = radial * conjg(ang_rea)
 
       enddo ! end ang
     enddo ! end radial
-
+    enddo ! K loop
   enddo
 enddo
 
@@ -1912,11 +1999,13 @@ integer :: a,b, a_sh, b_sh, spO2, ITER_PRNT
 integer :: i_r=1, i_an=1, msp
 
 real(r64) :: radial_part, dens_R, dens_A, rad4Integr, dens_Aa,dens_Ra
-complex(r64) :: sum_, integral_dens, sum_test, diff, x
+complex(r64) :: sum_, sum_test, diff, x
+complex(r64), dimension(:), allocatable :: integral_dens
 logical :: PRNT_
 
 PRNT_ = (PRINT_GUTS).OR.(.FALSE.)
 spO2 = HOsp_dim / 2
+allocate(integral_dens(number_DD_terms))
 
 density   = zzero
 dens_pnt  = zzero
@@ -1940,8 +2029,6 @@ if (PRNT_) then
 endif
 
 do i_r = 1, r_dim
-  !! [TEST] For the density to be integrated in the variable for the m.e.
-  rad4Integr =  weight_R(i_r) * exp((r(i_r)/HO_b)**2 * (1.0+alpha_DD))
 
   do i_an = 1, angular_dim
 
@@ -1955,15 +2042,20 @@ do i_r = 1, r_dim
       enddo ! do b
     enddo   ! do a
 
-    dens_pnt(5,i_r,i_an) = dens_pnt(1,i_r,i_an) + dens_pnt(2,i_r,i_an)
-    density(i_r,i_an)    = dens_pnt(5,i_r,i_an)
+    do K = 1, number_DD_terms
+      alpha_DD = parameters_alp1x0x0Hx0M(K,1)
+
+    dens_pnt(K,5,i_r,i_an) = dens_pnt(K,1,i_r,i_an) + dens_pnt(K,2,i_r,i_an)
+    density(i_r,i_an)    = dens_pnt(K,5,i_r,i_an)
 
     call resetOrSumTotalBulkDens4Fields(.FALSE., i_r, i_an)
 
     !! [TEST] For the density to be integrated in the variable for the m.e.
-    integral_dens = integral_dens + (dreal(density(i_r, i_an) * &
-                                           exp( (r(i_r)/HO_b)**2)  * &
-                                     weight_LEB(i_an) * rad4Integr))
+    rad4Integr =  weight_R(i_r) * exp((r(K, i_r)/HO_b)**2 * (1.0+alpha_DD))
+    !! [TEST] For the density to be integrated in the variable for the m.e.
+    integral_dens(K) = integral_dens(K) + (dreal(dens_pnt(K,i_r, i_an) * &
+                                           exp( (r(K,i_r)/HO_b)**2)  * &
+                                           weight_LEB(i_an) * rad4Integr))
 
     !!! calculate the density powered to alpha_DD for the matrix elements
     if (dabs(imag(density(i_r, i_an))) > 1.0e-10) then
@@ -1977,17 +2069,17 @@ do i_r = 1, r_dim
       call choose_riemann_fold_density(i_r, i_an)
 
     else
-      dens_alpha(i_r,i_an) = dreal(density(i_r,i_an)) ** alpha_DD
-      dens_alpm1(i_r,i_an) = dens_alpha(i_r,i_an) / density(i_r,i_an)
-      dens_alpm1(i_r,i_an) = MIN(dreal(dens_alpm1(i_r,i_an)), 1.0D+30)
+      dens_alpha(K,i_r,i_an) = dreal(dens_pnt(K,5,i_r,i_an)) ** alpha_DD
+      dens_alpm1(K,i_r,i_an) = dens_alpha(K,i_r,i_an) / dens_pnt(K,5,i_r,i_an)
+      dens_alpm1(K,i_r,i_an) = MIN(dreal(dens_alpm1(K,i_r,i_an)), 1.0D+30)
     endif
 
-    if (PRNT_) then
+    if (PRNT_ .AND. .FALSE.) then
       write(555,fmt="(2I5)", advance='no') i_r, i_an
       write(555,fmt='(7(F22.15,SP,F20.15,"j"))') &
-        dens_pnt(1,i_r,i_an), dens_pnt(2,i_r,i_an), dens_pnt(3,i_r,i_an), &
-        dens_pnt(4,i_r,i_an), dens_pnt(5,i_r,i_an), dens_alpha(i_r,i_an), &
-        dens_alpm1(i_r, i_an)
+        dens_pnt(K,1,i_r,i_an), dens_pnt(K,2,i_r,i_an), &
+        dens_pnt(K,3,i_r,i_an), dens_pnt(K,4,i_r,i_an), &
+        dens_pnt(K,5,i_r,i_an), dens_alpha(K,i_r,i_an), dens_alpm1(K,i_r,i_an)
       do msp =1, 4
         write(556,fmt="(3I5,A,3F9.5,A)", advance='no') i_r, i_an, msp, ',', &
           r(i_r), cos_th(i_an), phi(i_an), ','
@@ -1997,14 +2089,17 @@ do i_r = 1, r_dim
           r(i_r), cos_th(i_an), phi(i_an), ','
 
         write(556,fmt='(5(F22.15,SP,F20.15,"j"))') &
-          BulkHF(1,msp,i_r,i_an), BulkHF(2,msp,i_r,i_an), &
-          BulkHF(3,msp,i_r,i_an), BulkHF(4,msp,i_r,i_an), BulkHF(5,msp,i_r,i_an)
+          BulkHF(K,1,msp,i_r,i_an), BulkHF(K,2,msp,i_r,i_an), &
+          BulkHF(K,3,msp,i_r,i_an), BulkHF(K,4,msp,i_r,i_an), &
+          BulkHF(K,5,msp,i_r,i_an)
         write(551,fmt='(5(F22.15,SP,F20.15,"j"))') &
-          BulkP1(1,msp,i_r,i_an), BulkP1(2,msp,i_r,i_an), &
-          BulkP1(3,msp,i_r,i_an), BulkP1(4,msp,i_r,i_an), BulkP1(5,msp,i_r,i_an)
+          BulkP1(K,1,msp,i_r,i_an), BulkP1(K,2,msp,i_r,i_an), &
+          BulkP1(K,3,msp,i_r,i_an), BulkP1(K,4,msp,i_r,i_an), &
+          BulkP1(K,5,msp,i_r,i_an)
         write(552,fmt='(5(F22.15,SP,F20.15,"j"))') &
-          BulkP2(1,msp,i_r,i_an), BulkP2(2,msp,i_r,i_an), &
-          BulkP2(3,msp,i_r,i_an), BulkP2(4,msp,i_r,i_an), BulkP2(5,msp,i_r,i_an)
+          BulkP2(K,1,msp,i_r,i_an), BulkP2(K,2,msp,i_r,i_an), &
+          BulkP2(K,3,msp,i_r,i_an), BulkP2(K,4,msp,i_r,i_an), &
+          BulkP2(K,5,msp,i_r,i_an)
         if (msp == 4) then
           write(556, fmt="(A)") ""
           write(551, fmt="(A)") ""
@@ -2013,6 +2108,7 @@ do i_r = 1, r_dim
       enddo
     endif ! PRNT_ case
 
+    enddo ! loop K
   enddo   !end do i_angular
 enddo ! do i_r
 
@@ -2028,10 +2124,14 @@ endif
 !! [TEST] For the density to be integrated in the variable for the m.e.
 ITER_PRNT = 10
 if (DOING_PROJECTION) ITER_PRNT = ITER_PRNT * Mphip_DD * Mphin_DD
+
+do K = 1, number_DD_terms
 if ((iteration.eq.0).OR.(MOD(iteration + 1, ITER_PRNT).EQ.0)) then
-  integral_dens = integral_dens * 2 * pi * (HO_b**3) / ((2.0 + alpha_DD)**1.5)
-  print "(A,F13.9,A)", "      *A* ", dreal(integral_dens), "  <dens(r)> approx"
+  alpha_DD = parameters_alp1x0x0Hx0M(K,1)
+  integral_dens(K) = integral_dens(K) *2*pi*(HO_b**3) / ((2.0 + alpha_DD)**1.5)
+print "(A,F13.9,A)", "      *A* ",dreal(integral_dens(K)),"  <dens(r)> approx"
 endif
+enddo
 
 end subroutine calculate_expectval_density
 
@@ -2125,9 +2225,9 @@ end function step_reconstruct_2body_timerev
 !                       ta,tb,tc,td of the sp-state.                          !
 !                       v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)   !
 !-----------------------------------------------------------------------------!
-function matrix_element_v_DD(a,b, c,d, ALL_ISOS) result (v_dd_val_Real)
+function matrix_element_v_DD(a,b, c,d, K,ALL_ISOS) result (v_dd_val_Real)
 
-integer(i32), intent(in) :: a,b,c,d
+integer(i32), intent(in) :: a,b,c,d,K
 logical, intent(in) :: ALL_ISOS     !! compute 3 combinations p/n instead of the
 real(r64), dimension(4) :: v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)
 
@@ -2142,6 +2242,10 @@ integer(i32) :: la, ja, ma, a_sh, ta, lb, jb, mb, b_sh, tb, bmax, &
                 ind_jm_a, ind_jm_b, ind_jm_c, ind_jm_d, delta_ac_bd, delta_ad_bc
 integer :: print_element = 0, HOspO2, skpd
 real(r64) :: v_re_1, v_re_2
+
+alpha_DD     = parameters_alp1x0x0Hx0M(K, 1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K, 2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K, 3)
 
 HOspO2 = HOsp_dim/2
 
@@ -2198,9 +2302,9 @@ integral_factor = integral_factor * 4 * pi  ! add Lebedev norm factor
 
 do i_r = 1, r_dim
 
-  radial = weight_R(i_r) * radial_2b_sho_memo(a_sh, c_sh, i_r) &
-                         * radial_2b_sho_memo(b_sh, d_sh, i_r) &
-                         * exp((2.0d0+alpha_DD) * (r(i_r)/HO_b)**2)
+  radial = weight_R(i_r) * radial_2b_sho_memo(K, a_sh, c_sh, i_r) &
+                         * radial_2b_sho_memo(K, b_sh, d_sh, i_r) &
+                         * exp((2.0d0+alpha_DD) * (r(K, i_r)/HO_b)**2)
   !! NOTE: the inclusion of the exponential part is necessary due the form of
   !! of the density and radial functions with the exp(-r/b^2) for stability
   !! requirement in larger shells.
@@ -2283,9 +2387,9 @@ do i_r = 1, r_dim
           do kk2 = 1, HOspO2
             kk2N = kk2 +HOspO2
 
-            rea = aux_rea  * rea_common_RadAng(kk1,kk2, i_r, i_ang)
-            rearrangement_me(kk1,kk2)   = rearrangement_me(kk1,kk2)   + rea
-            rearrangement_me(kk1N,kk2N) = rearrangement_me(kk1N,kk2N) + rea
+            rea = aux_rea  * rea_common_RadAng(K, kk1,kk2, i_r, i_ang)
+            rearrangement_me(K,kk1,kk2)   = rearrangement_me(K,kk1,kk2)   + rea
+            rearrangement_me(K,kk1N,kk2N) = rearrangement_me(K,kk1N,kk2N) + rea
             enddo
         enddo
       endif
@@ -2294,11 +2398,11 @@ do i_r = 1, r_dim
 enddo    ! radial  iter_
 
 if (EVAL_EXPLICIT_FIELDS_DD) then
-  TOP = abs(maxval(real(rearrangement_me)))
-  LOW = abs(minval(real(rearrangement_me)))
+  TOP = abs(maxval(real(rearrangement_me(K))))
+  LOW = abs(minval(real(rearrangement_me(K))))
   if (TOP > 1.0D+10) then !((TOP < 1.0D+10).AND.(LOW > 1.E-10)) then
-      print "(A,4I3,2F20.10)", "!! REA", a,b,c,d, &
-          minval(real(rearrangement_me)), maxval(real(rearrangement_me))
+      print "(A,5I3,2F20.10)", "!! REA", a,b,c,d, K&
+          minval(real(rearrangement_me(K))), maxval(real(rearrangement_me(K)))
   endif
 endif
 
@@ -2344,8 +2448,10 @@ integer(i64) :: kk, i, kkk
 integer, parameter :: CONVERG_ITER = 10000
 real(r64) :: xja, xjb, xjc, xjd, xjtot, xttot, phasab, phascd, Vtmp, &
              Vcut, Vdec, Vred
-real(r64), dimension(4) :: me_Vdec, me_VGRc, me_VGRc1, me_VGRc2, me_VGRc3
+real(r64), dimension(4) :: me_Vdec, me_VGRc, me_VGRc1, me_VGRc2, me_VGRc3, &
+                           aux_meVdec, aux_meVGRc
 real(r64), dimension(:), allocatable :: hamil_temp, hamil_temp_2
+integer   :: K
 character(len=25) :: filename
 logical   :: ALL_ISOS
 
@@ -2415,41 +2521,50 @@ do aa = 1, WBsp_dim / 2 ! (prev = HOsp_dim)
 
         if ( ta + tb /= tc + td ) cycle
 
+        me_Vdec = zero
+        me_VGRc = zero
         rearrangement_me = zero
+        do K = 1, number_DD_terms
+          aux_meVdec   = matrix_element_v_DD(a,b, c,d,1, ALL_ISOS)
+          if      (EXPORT_GRAD_DD) then
+            aux_meVGRc = matrix_element_v_gradientDD(a,b, c,d, 1)
+          else if (EXPORT_PREA_DD) then
+            aux_meVGRc = matrix_element_pseudoRearrangement(a,b, c,d, 1)
 
-        me_Vdec   = matrix_element_v_DD(a,b, c,d, ALL_ISOS)
-        if      (EXPORT_GRAD_DD) then
-          me_VGRc = matrix_element_v_gradientDD(a,b, c,d)
-        else if (EXPORT_PREA_DD) then
-          me_VGRc = matrix_element_pseudoRearrangement(a,b, c,d)
+          do i = 1, 4
+            me_Vdec(i) = me_Vdec(i) + aux_meVdec(i)
+            if (EXPORT_GRAD_DD .OR. EXPORT_PREA_DD) then
+              me_VGRc(i) = me_VGRc(i) + aux_meVGRc(i)
+            end if
+          end do
+            !! test ANTISYMMETRY  ===================
+  !me_VGRc1 = matrix_element_pseudoRearrangement(a,b, d,c)
+  !me_VGRc2 = matrix_element_pseudoRearrangement(b,a, c,d)
+  !me_VGRc3 = matrix_element_pseudoRearrangement(b,a, d,c)
+  !
+  !tmax = 0
+  !do t = 1, 4
+  !  if (almost_equal(me_VGRc(t), zero, 1.0d-9)) cycle
+  !
+  !  if (.NOT. almost_equal(me_VGRc(t), -one * me_VGRc1(t), 1.0d-6)) then
+  !    print "(A,I3,2F15.8)"," AntySym-ERR 1 -(ab,dc)t:",t,me_VGRc(t),me_VGRc1(t)
+  !    tmax = tmax + 1
+  !  end if
+  !  if (.NOT. almost_equal(me_VGRc(t), -one * me_VGRc2(t), 1.0d-6)) then
+  !    print "(A,I3,2F15.8)"," AntySym-ERR 2 -(ba,cd)t:",t,me_VGRc(t),me_VGRc2(t)
+  !    tmax = tmax + 1
+  !  end if
+  !  if (.NOT. almost_equal(me_VGRc(t), me_VGRc3(t), 1.0d-6)) then
+  !    print "(A,I3,2F15.8)"," AntySym-ERR 3 +(ba,dc)t:",t,me_VGRc(t),me_VGRc3(t)
+  !    tmax = tmax + 1
+  !  end if
+  !end do
+  !
+  !if (tmax .GT. 0) print "(A,I3,A,4I5)", "   [ERROR]s:[",tmax,"] a,b,c,d",a,b,c,d
 
-          !! test ANTISYMMETRY  ===================
-!me_VGRc1 = matrix_element_pseudoRearrangement(a,b, d,c)
-!me_VGRc2 = matrix_element_pseudoRearrangement(b,a, c,d)
-!me_VGRc3 = matrix_element_pseudoRearrangement(b,a, d,c)
-!
-!tmax = 0
-!do t = 1, 4
-!  if (almost_equal(me_VGRc(t), zero, 1.0d-9)) cycle
-!
-!  if (.NOT. almost_equal(me_VGRc(t), -one * me_VGRc1(t), 1.0d-6)) then
-!    print "(A,I3,2F15.8)"," AntySym-ERR 1 -(ab,dc)t:",t,me_VGRc(t),me_VGRc1(t)
-!    tmax = tmax + 1
-!  end if
-!  if (.NOT. almost_equal(me_VGRc(t), -one * me_VGRc2(t), 1.0d-6)) then
-!    print "(A,I3,2F15.8)"," AntySym-ERR 2 -(ba,cd)t:",t,me_VGRc(t),me_VGRc2(t)
-!    tmax = tmax + 1
-!  end if
-!  if (.NOT. almost_equal(me_VGRc(t), me_VGRc3(t), 1.0d-6)) then
-!    print "(A,I3,2F15.8)"," AntySym-ERR 3 +(ba,dc)t:",t,me_VGRc(t),me_VGRc3(t)
-!    tmax = tmax + 1
-!  end if
-!end do
-!
-!if (tmax .GT. 0) print "(A,I3,A,4I5)", "   [ERROR]s:[",tmax,"] a,b,c,d",a,b,c,d
-
-          !! ======================================
-        endif
+            !! ======================================
+          endif
+        enddo ! K loop
 
         !!! Select only matrix elements above a given cutoff to reduce the
         !!! CPU time and storage
@@ -2466,14 +2581,16 @@ do aa = 1, WBsp_dim / 2 ! (prev = HOsp_dim)
             if (EXPORT_GRAD_DD .OR. EXPORT_PREA_DD) then
               write(uth8) me_VGRc(1), me_VGRc(2), me_VGRc(3), me_VGRc(4)
               !! evaluate the rearrangement
-              rearrang_field(a ,c ) = rearrang_field(a ,c ) + &
+              do K = 1, number_DD_terms
+                rearrang_field(K,a ,c ) = rearrang_field(K,a ,c ) + &
                   (me_VGRc(1)*dens_rhoLR(d ,b ) + me_VGRc(2)*dens_rhoLR(dn,bn))
-              rearrang_field(an,cn) = rearrang_field(an,cn) + &
-                  (me_VGRc(2)*dens_rhoLR(d ,b ) + me_VGRc(4)*dens_rhoLR(dn,bn))
-              rearrang_field(a ,cn) = rearrang_field(a ,cn) + &
-                  (me_VGRc(3)*dens_rhoLR(d ,bn))
-              rearrang_field(an,c ) = rearrang_field(an,c ) + &
-                  (me_VGRc(3)*dens_rhoLR(dn,b ))
+                rearrang_field(K,an,cn) = rearrang_field(K,an,cn) + &
+                    (me_VGRc(2)*dens_rhoLR(d ,b ) + me_VGRc(4)*dens_rhoLR(dn,bn))
+                rearrang_field(K,a ,cn) = rearrang_field(K,a ,cn) + &
+                    (me_VGRc(3)*dens_rhoLR(d ,bn))
+                rearrang_field(K,an,c ) = rearrang_field(K,an,c ) + &
+                    (me_VGRc(3)*dens_rhoLR(dn,b ))
+              end do
             endif
           endif
 
@@ -2509,7 +2626,7 @@ do aa = 1, WBsp_dim / 2 ! (prev = HOsp_dim)
             endif
 
             if ((EVAL_REARRANGEMENT).AND.(EVAL_EXPLICIT_FIELDS_DD)) then
-              call calculate_rearrang_field_explicit(a, b, c, d, Vdec)
+              call calculate_rearrang_field_explicit(a, b, c, d)
             endif
           endif
         endif ! select the process or to export the matrix elements
@@ -3023,10 +3140,9 @@ end subroutine print_uncoupled_hamiltonian_H2
 ! these elements are evaluated, completing the Rearrangement Field one element !
 ! at a time.                                                                   !
 !------------------------------------------------------------------------------!
-subroutine calculate_rearrang_field_explicit(ia, ib, ic, id, Vdec)
+subroutine calculate_rearrang_field_explicit(ia, ib, ic, id)
 
 integer, intent(in)   :: ia, ib, ic, id
-real(r64), intent(in) :: Vdec
 complex(r64) :: aux_rea, Fcomb, aux_reaN
                 !f0, f1, f2, f3, & ! field_abcd, f_abdc, f_bacd, f_badc
                 !f4, f5, f6, f7, & ! field_cdab, f_cdba, f_dcab, f_dcba
@@ -3119,16 +3235,18 @@ Fcomb = (f(0) - f(1) - f(2) + f(3)) + (f(4) - f(5) - f(6) + f(7))
     do k2 = 1, HOspo2
       k2N = k2 + HOspo2
 
-      rea_h  = sign_tr * rearrangement_me(k1,k2)
-      rea_hN = sign_tr * rearrangement_me(k1N,k2N)
+      do K = 1, number_DD_terms
+        rea_h  = sign_tr * rearrangement_me(K, k1,k2)
+        rea_hN = sign_tr * rearrangement_me(K, k1N,k2N)
 
-      !!! Faster than using if ((a /= c).or.(b /= d))
-      !!! Calculation of Gamma
-      aux_rea  = rea_h  * Fcomb
-      aux_reaN = rea_hN * Fcomb
+        !!! Faster than using if ((a /= c).or.(b /= d))
+        !!! Calculation of Gamma
+        aux_rea  = rea_h  * Fcomb
+        aux_reaN = rea_hN * Fcomb
 
-      rearrang_field(k1,k2)   = rearrang_field(k1,k2)   + aux_rea
-      rearrang_field(k1N,k2N) = rearrang_field(k1N,k2N) + aux_reaN
+        rearrang_field(k1,k2)   = rearrang_field(k1,k2)   + aux_rea
+        rearrang_field(k1N,k2N) = rearrang_field(k1N,k2N) + aux_reaN
+      end do ! K loop
 
     enddo
   enddo
@@ -3349,31 +3467,34 @@ end subroutine calculate_fields_DD_explicit
 ! The total function is independent of sp indexes, this include only the normal!
 ! density-matrices that not cross the protons-neutrons.                        !
 !------------------------------------------------------------------------------!
-subroutine calculate_common_rearrang_bulkFields
+subroutine calculate_common_rearrang_bulkFields(K)
+
+integer, intent(in) :: K
 integer      :: i_r, i_a, ms, ms2
 complex(r64) :: aux_d, aux_e, aux_p, aux_pnp, aux1, aux2, aux3, aux4
 real         :: X0M1
 
-REACommonFields = zero
+!REACommonFields = zero   !! in normal code
 if (.NOT.EVAL_REARRANGEMENT) return
 if (PRINT_GUTS) then
-  open(665, file='BulkREA_elements.gut')
+  if (K.EQ.1) open(665, file='BulkREA_elements.gut')
   write(665,fmt='(3A)') &
   "i_r, i_ang      B_HF_Direct_REA                               ",&
-  "B_HF_Exchange_REA                          B_PairingPPNN_REA              ",&
-  "              B_Pairing_PN_REA                          REA_CommonField"
+  "B_HF_Exchange_REA                          B_PairingPPNN_REA            ",&
+  "                B_Pairing_PN_REA                          REA_CommonField"
 endif
+
 X0M1 = 1.0d0 - x0_DD_FACTOR
 
 do i_r = 1, r_dim
   do i_a = 1, angular_dim
 
-    aux_d =  dens_pnt(5,i_r,i_a)**2
-    aux1  = (dens_pnt(1,i_r,i_a)**2) + (dens_pnt(2,i_r,i_a)**2)
+    aux_d =  dens_pnt(K,5,i_r,i_a)**2
+    aux1  = (dens_pnt(K,1,i_r,i_a)**2) + (dens_pnt(K,2,i_r,i_a)**2)
 
     aux2 = zzero  ! pn np part
     if (CALCULATE_DD_PN_HF) then
-      aux2  = 2.0d0 * dens_pnt(3,i_r,i_a) * dens_pnt(4,i_r,i_a)
+      aux2  = 2.0d0 * dens_pnt(K,3,i_r,i_a) * dens_pnt(K,4,i_r,i_a)
       endif
     !! dens_pnt are complex, a test is to verify aux2 with the following to be Real
     !aux2 = 2.0d0*(dreal(dens_pnt(3,i_r,i_a))**2 - dimag(dens_pnt(3,i_r,i_a))**2)
@@ -3392,29 +3513,29 @@ do i_r = 1, r_dim
       end select
 
       !Exchange part of the HF like fields
-      aux1  = BulkHF(1,ms2, i_r,i_a) * BulkHF(1,ms,i_r,i_a) !pp
-      aux2  = BulkHF(2,ms2, i_r,i_a) * BulkHF(2,ms,i_r,i_a) !nn
+      aux1  = BulkHF(K,1,ms2, i_r,i_a) * BulkHF(K,1,ms,i_r,i_a) !pp
+      aux2  = BulkHF(K,2,ms2, i_r,i_a) * BulkHF(K,2,ms,i_r,i_a) !nn
       aux_e = aux_e + (aux1  + aux2)
         ! pn np part
       if (CALCULATE_DD_PN_HF) then
-        aux1  = BulkHF(3,ms2, i_r,i_a) * BulkHF(4,ms,i_r,i_a) !pn*np
-        aux2  = BulkHF(4,ms2, i_r,i_a) * BulkHF(3,ms,i_r,i_a) !np*pn
+        aux1  = BulkHF(K,3,ms2, i_r,i_a) * BulkHF(K,4,ms,i_r,i_a) !pn*np
+        aux2  = BulkHF(K,4,ms2, i_r,i_a) * BulkHF(K,3,ms,i_r,i_a) !np*pn
         aux_e = aux_e + (aux1 + aux2)
       end if
         !total field part
-      aux1  = BulkHF(5,ms2, i_r,i_a) * BulkHF(5,ms,i_r,i_a) !tot
+      aux1  = BulkHF(K,5,ms2, i_r,i_a) * BulkHF(K,5,ms,i_r,i_a) !tot
       aux_e = aux_e - (x0_DD_FACTOR * aux1)
 
       !Pairing rearrangement fields
       if (hasX0M1) then
-        aux1  = BulkP2(1,ms, i_r,i_a) * BulkP1(1,ms, i_r,i_a) !pp
-        aux2  = BulkP2(2,ms, i_r,i_a) * BulkP1(2,ms, i_r,i_a) !nn
+        aux1  = BulkP2(K,1,ms, i_r,i_a) * BulkP1(K,1,ms, i_r,i_a) !pp
+        aux2  = BulkP2(K,2,ms, i_r,i_a) * BulkP1(K,2,ms, i_r,i_a) !nn
         aux_p = aux_p + (aux1 + aux2)
       endif
       !pn np part (remember the 1Bpn + x0*1Bpn - 1Bnp - x0*1Bnp was done already)
       if (CALCULATE_DD_PN_PA) then
-        aux1   = BulkP2(3,ms, i_r,i_a) * BulkP1(3,ms, i_r,i_a) !pn*pn
-        aux2   = BulkP2(4,ms, i_r,i_a) * BulkP1(4,ms, i_r,i_a) !np*np
+        aux1   = BulkP2(K,3,ms, i_r,i_a) * BulkP1(K,3,ms, i_r,i_a) !pn*pn
+        aux2   = BulkP2(K,4,ms, i_r,i_a) * BulkP1(K,4,ms, i_r,i_a) !np*np
         aux_pnp = aux_pnp + (aux1 + aux2)
       endif
 
@@ -3427,26 +3548,26 @@ do i_r = 1, r_dim
       print '(A,2I4,5F20.15)',"Error!! Rearr. funct. is imaginary: ",i_r,i_a,&
         dimag(aux1), dimag(aux_d), dimag(aux_e), dimag(aux_p), dimag(aux_pnp)
     end if
-    REACommonFields(i_r, i_a) = aux1   !! dreal(aux1)
+    REACommonFields(K,i_r, i_a) = aux1   !! dreal(aux1)
 
-    if (has_HEIS_MAJO_TERMS) call calculate_rearrang_bulkFields_HM(i_r, i_a)
+    if (has_HEIS_MAJO_TERMS) call calculate_rearrang_bulkFields_HM(K, i_r, i_a)
 
     ! export Rea Fields by parts
     if (PRINT_GUTS) then
       write(665, fmt='(2I4,5(F22.15,SP,F20.15,"j"))') &
-        i_r, i_a, aux_d, aux_e, aux_p, aux_pnp, REACommonFields(i_r, i_a)
+        i_r, i_a, aux_d, aux_e, aux_p, aux_pnp, REACommonFields(K,i_r, i_a)
     endif
   enddo
 enddo
-if (PRINT_GUTS) close(665)
+if (PRINT_GUTS .AND. (K.EQ.number_DD_terms)) close(665)
 
 end subroutine calculate_common_rearrang_bulkFields
 
 !!
 !! ! Extension of the rearrangement for Heisenberg-Majorana exchange operators
 !!
-subroutine calculate_rearrang_bulkFields_HM(i_r, i_a)
-integer, intent(in) :: i_r, i_a
+subroutine calculate_rearrang_bulkFields_HM(K, i_r, i_a)
+integer, intent(in) :: K, i_r, i_a
 integer      ::  ms, ms2
 complex(r64) :: aux_d, aux_e, aux_p, aux_pnp, aux1, aux2, aux3, aux4
 real(r64)    :: X0MpH
@@ -3455,11 +3576,11 @@ X0MpH = CONST_x0_EXC_HEIS + CONST_x0_EXC_MAJO
 
 if (.NOT. has_HEIS_MAJO_TERMS) return
 
-aux_d =  dens_pnt(5,i_r,i_a)**2
-aux1  = (dens_pnt(1,i_r,i_a)**2) + (dens_pnt(2,i_r,i_a)**2)
+aux_d =  dens_pnt(K,5,i_r,i_a)**2
+aux1  = (dens_pnt(K,1,i_r,i_a)**2) + (dens_pnt(K,2,i_r,i_a)**2)
 aux2 = zzero  ! pn np part
 if (CALCULATE_DD_PN_HF) then
-  aux2  = 2.0d0 * dens_pnt(3,i_r,i_a) * dens_pnt(4,i_r,i_a)
+  aux2  = 2.0d0 * dens_pnt(K,3,i_r,i_a) * dens_pnt(K,4,i_r,i_a)
   endif
 aux_d = (CONST_x0_EXC_HEIS * (aux1 + aux2)) - (CONST_x0_EXC_MAJO * aux_d)
 
@@ -3475,27 +3596,27 @@ do ms = 1, 4
   end select
 
   !Exchange part of the HF like fields
-  aux1  = BulkHF(1,ms2, i_r,i_a) * BulkHF(1,ms,i_r,i_a) !pp
-  aux2  = BulkHF(2,ms2, i_r,i_a) * BulkHF(2,ms,i_r,i_a) !nn
+  aux1  = BulkHF(K,1,ms2, i_r,i_a) * BulkHF(K,1,ms,i_r,i_a) !pp
+  aux2  = BulkHF(K,2,ms2, i_r,i_a) * BulkHF(K,2,ms,i_r,i_a) !nn
   aux_e = aux_e + (CONST_x0_EXC_MAJO * (aux1 + aux2))
   ! pn np part in the following <if>
 
   !total field part
-  aux1  = BulkHF(5,ms2, i_r,i_a) * BulkHF(5,ms,i_r,i_a) !tot
+  aux1  = BulkHF(K,5,ms2, i_r,i_a) * BulkHF(K,5,ms,i_r,i_a) !tot
   aux_e = aux_e - (CONST_x0_EXC_HEIS * aux1)
 
   !Pairing rearrangement fields
-  aux1  = BulkP2(1,ms, i_r,i_a) * BulkP1(1,ms, i_r,i_a) !pp
-  aux2  = BulkP2(2,ms, i_r,i_a) * BulkP1(2,ms, i_r,i_a) !nn
+  aux1  = BulkP2(K,1,ms, i_r,i_a) * BulkP1(K,1,ms, i_r,i_a) !pp
+  aux2  = BulkP2(K,2,ms, i_r,i_a) * BulkP1(K,2,ms, i_r,i_a) !nn
   aux_p = aux_p + (aux1 + aux2)
   !pn np part (remember the H 1Bnp - M*1Bpn - H 1Bpn  + M*1Bpn was done already)
   if (CALCULATE_DD_PN_PA) then
-    aux1   = BulkP2(3,ms, i_r,i_a) * BulkP1(3,ms, i_r,i_a) !pn*pn
-    aux2   = BulkP2(4,ms, i_r,i_a) * BulkP1(4,ms, i_r,i_a) !np*np
+    aux1   = BulkP2(K,3,ms, i_r,i_a) * BulkP1(K,3,ms, i_r,i_a) !pn*pn
+    aux2   = BulkP2(K,4,ms, i_r,i_a) * BulkP1(K,4,ms, i_r,i_a) !np*np
     aux_pnp = aux_pnp + (aux1 + aux2)
 
-    aux1  = BulkHF(4,ms2, i_r,i_a) * BulkHF(3,ms,i_r,i_a) !pn*np
-    aux2  = BulkHF(3,ms2, i_r,i_a) * BulkHF(4,ms,i_r,i_a) !np*pn
+    aux1  = BulkHF(K,4,ms2, i_r,i_a) * BulkHF(K,3,ms,i_r,i_a) !pn*np
+    aux2  = BulkHF(K,3,ms2, i_r,i_a) * BulkHF(K,4,ms,i_r,i_a) !np*pn
     aux_e = aux_e + (CONST_x0_EXC_MAJO * (aux1 + aux2))
   endif
 
@@ -3504,7 +3625,7 @@ enddo ! loop ms
 aux1 = (2.0D+00*(aux_d + aux_e)) + (X0MpH*aux_p) + aux_pnp
 
 !! Append to normal DD exchange
-REACommonFields(i_r, i_a) = REACommonFields(i_r, i_a) - aux1
+REACommonFields(K, i_r, i_a) = REACommonFields(K, i_r, i_a) - aux1
 
 end subroutine calculate_rearrang_bulkFields_HM
 
@@ -3595,9 +3716,9 @@ end subroutine complete_DD_fields
 ! Notice: these fields have sign (-1), and exchange terms for HF has to be
 !    inversed (* -1) since the current definition of from usual D1S interaction
 !------------------------------------------------------------------------------!
-subroutine calculate_fields_DD_HM(a,c, i_r,i_ang, auxHfDio, auxHfEio, aux_PEio)
+subroutine calculate_fields_DD_HM(K,a,c, i_r,i_ang, auxHfDio,auxHfEio,aux_PEio)
 
-integer,   intent(in) :: a, c, i_r, i_ang
+integer,   intent(in) :: K, a, c, i_r, i_ang
 complex(r64), dimension(4) :: auxHfDio, auxHfEio, aux_PEio ! all arrays are for (pp, nn, pn, np)
 
 complex(r64), dimension(4) :: auxHfD, auxHfE, aux_PE, aux
@@ -3612,16 +3733,16 @@ if (.NOT. (has_HEIS_MAJO_TERMS)) return
 auxHfD = zzero
 !! DIRECT terms for the HF field
 sumD_ang  = AngFunctDUAL_HF(1,a,c,i_ang) + AngFunctDUAL_HF(4,a,c,i_ang)
-auxHfD(1) = (CONST_x0_EXC_HEIS*dens_pnt(1,i_r,i_ang) - &
-             CONST_x0_EXC_MAJO*dens_pnt(5,i_r,i_ang))
-auxHfD(2) = (CONST_x0_EXC_HEIS*dens_pnt(2,i_r,i_ang) - &
-             CONST_x0_EXC_MAJO*dens_pnt(5,i_r,i_ang))
+auxHfD(1) = (CONST_x0_EXC_HEIS*dens_pnt(K,1,i_r,i_ang) - &
+             CONST_x0_EXC_MAJO*dens_pnt(K,5,i_r,i_ang))
+auxHfD(2) = (CONST_x0_EXC_HEIS*dens_pnt(K,2,i_r,i_ang) - &
+             CONST_x0_EXC_MAJO*dens_pnt(K,5,i_r,i_ang))
 if (CALCULATE_DD_PN_HF) then
-  auxHfD(3) = -CONST_x0_EXC_HEIS * dens_pnt(3,i_r,i_ang)
-  auxHfD(4) = -CONST_x0_EXC_HEIS * dens_pnt(4,i_r,i_ang)
+  auxHfD(3) = -CONST_x0_EXC_HEIS * dens_pnt(K,3,i_r,i_ang)
+  auxHfD(4) = -CONST_x0_EXC_HEIS * dens_pnt(K,4,i_r,i_ang)
   endif
 do Tac = 1, 4
-  auxHfD(Tac)   = sumD_ang * auxHfD(Tac)
+  auxHfD(Tac) = sumD_ang * auxHfD(Tac)
 
   if (a.lt.10 .AND. c.le.10 .and. i_r.eq.4 .AND. i_ang.EQ.20) then
     print "(A,3I4,2F10.5)", "DIRE a,c,tac=",a,c,Tac, real(auxHfDio(Tac)),&
@@ -3637,36 +3758,36 @@ auxHfE = zzero
 aux_PE = zzero
 aux = zzero
 do ms = 1, 4
-  aux(ms) = CONST_x0_EXC_MAJO * BulkHF(1,ms, i_r, i_ang) !pp
-  aux(ms) = aux(ms) - (CONST_x0_EXC_HEIS * BulkHF(5,ms, i_r, i_ang)) !tot
+  aux(ms) = CONST_x0_EXC_MAJO * BulkHF(K,1,ms, i_r, i_ang) !pp
+  aux(ms) = aux(ms) - (CONST_x0_EXC_HEIS * BulkHF(K,5,ms, i_r, i_ang)) !tot
   aux(ms) = aux(ms) * AngFunctDUAL_HF(ms, a,c, i_ang)
   auxHfE(1)  = auxHfE(1) + aux(ms)
 
-  aux(ms) = CONST_x0_EXC_MAJO * BulkHF(2,ms, i_r, i_ang) !nn
-  aux(ms) = aux(ms) - (CONST_x0_EXC_HEIS * BulkHF(5,ms, i_r, i_ang))
+  aux(ms) = CONST_x0_EXC_MAJO * BulkHF(K,2,ms, i_r, i_ang) !nn
+  aux(ms) = aux(ms) - (CONST_x0_EXC_HEIS * BulkHF(K,5,ms, i_r, i_ang))
   aux(ms) = aux(ms) * AngFunctDUAL_HF(ms, a,c, i_ang)
   auxHfE(2)  = auxHfE(2) + aux(ms)
     !pn np part
   if (CALCULATE_DD_PN_PA) then
-  aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(3,ms, i_r,i_ang) !pn
+  aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(K,3,ms, i_r,i_ang) !pn
   auxHfE(3)  = auxHfE(3) + (aux(ms) * CONST_x0_EXC_MAJO)
-  aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(4,ms, i_r,i_ang) !np
+  aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(K,4,ms, i_r,i_ang) !np
   auxHfE(4)  = auxHfE(4) + (aux(ms) * CONST_x0_EXC_MAJO)
   endif
 
   !! NOTE: Angular 1, 2 functions are defined with direct form of ms,ms'
   if (hasX0M1) then
-    aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1_HM(1,ms,i_r,i_ang) !pp
+    aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1_HM(K,1,ms,i_r,i_ang) !pp
     aux_PE(1) = aux_PE(1)  + (X0MpH * aux(ms))
-    aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1_HM(2,ms,i_r,i_ang) !nn
+    aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1_HM(K,2,ms,i_r,i_ang) !nn
     aux_PE(2) = aux_PE(2)  + (X0MpH * aux(ms))
   endif
 
   !! pn np part, x0 dependence was calculated in BulkP1_**
   if (CALCULATE_DD_PN_PA) then
-  aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1_HM(3,ms, i_r,i_ang) !pn
+  aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1_HM(K,3,ms, i_r,i_ang) !pn
   aux_PE(3)  = aux_PE(3)  + aux(ms)
-  aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1_HM(4,ms, i_r,i_ang) !np
+  aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1_HM(K,4,ms, i_r,i_ang) !np
   aux_PE(4)  = aux_PE(4)  + aux(ms)
   endif
 
@@ -3688,9 +3809,9 @@ end subroutine calculate_fields_DD_HM
 ! speeds up the bench process by reading half the N/2 space, perform Trace test!
 ! each 10 iterations and at the first iteration.                               !
 !------------------------------------------------------------------------------!
-subroutine calculate_fields_DD(gammaLR,hspLR,deltaLR,deltaRL,ndim)
+subroutine calculate_fields_DD(gammaLR,hspLR,deltaLR,deltaRL, K, ndim)
 
-integer, intent(in) :: ndim
+integer, intent(in) :: K, ndim
 complex(r64), dimension(ndim,ndim) :: gammaLR, hspLR, deltaLR, deltaRL
 !! The density fields are added to the calculated with the standard hamiltonian
 !! This array variables are local
@@ -3743,13 +3864,15 @@ X0M1 = 1.0d0 - x0_DD_FACTOR
 
 !! Get the rad-ang function from the current densities for rearrangement
 if (EVAL_REARRANGEMENT) then
-  call calculate_common_rearrang_bulkFields
+  call calculate_common_rearrang_bulkFields(K)
 endif
 if (PRNT_) then
-  open(555, file='BulkHF_elements_Exch.gut')
-  open(556, file='BulkHF_elements_Dire.gut')
-  open(557, file='BulkPA_elements_Exch.gut')
-  open(558, file='BulkPA_comp_integrals.gut')
+  if (K .EQ. 1) then
+    open(555, file='BulkHF_elements_Exch.gut')
+    open(556, file='BulkHF_elements_Dire.gut')
+    open(557, file='BulkPA_elements_Exch.gut')
+    open(558, file='BulkPA_comp_integrals.gut')
+  endif
 
   write(555, fmt='(2A,2I4)')"[auxHf Exc] a   c  ir  ia   %% ", &
     "real(pp)  imagn(pp), nn, pn    I_r,I_ang=", R_PRINT, ANG_PRINT
@@ -3763,7 +3886,7 @@ endif
 if (EVAL_CUTOFF .AND. (CUTOFF_MODE.NE.1)) then
   call cutoff_by_kappa_matrix(HOsp_dim)
   call reeval_pairing_fields_after_cutoff(.TRUE., hspLR, deltaLR, deltaRL, &
-                                          deltaLR_DD, deltaRL_DD, ndim)
+                                          deltaLR_DD, deltaRL_DD, K, ndim)
 endif
 
 do a = 1, spO2
@@ -3780,17 +3903,19 @@ do a = 1, spO2
     int_test_PE = zzero
 
     do i_r = 1, r_dim
-      rad_ac = weight_R(i_r) * radial_2b_sho_memo(a_sh, c_sh, i_r)
-      rad_ac = rad_ac * dexp((2.0d0+alpha_DD) * (r(i_r)/HO_b)**2)
+      rad_ac = weight_R(i_r) * radial_2b_sho_memo(K, a_sh, c_sh, i_r)
+      rad_ac = rad_ac * dexp((2.0d0+alpha_DD) * (r(K, i_r)/HO_b)**2)
       do i_ang = 1, angular_dim
         auxHfD = zzero
         !! DIRECT terms for the HF field
         sumD_ang  = AngFunctDUAL_HF(1,a,c,i_ang) + AngFunctDUAL_HF(4,a,c,i_ang)
-        auxHfD(1) = dens_pnt(5,i_r,i_ang) - (x0_DD_FACTOR*dens_pnt(1,i_r,i_ang))
-        auxHfD(2) = dens_pnt(5,i_r,i_ang) - (x0_DD_FACTOR*dens_pnt(2,i_r,i_ang))
+        auxHfD(1) = dens_pnt(K,5,i_r,i_ang) - &
+                      (x0_DD_FACTOR * dens_pnt(K,1,i_r,i_ang))
+        auxHfD(2) = dens_pnt(K,5,i_r,i_ang) - &
+                      (x0_DD_FACTOR * dens_pnt(K,2,i_r,i_ang))
         if (CALCULATE_DD_PN_HF) then
-          auxHfD(3) = -x0_DD_FACTOR * dens_pnt(3,i_r,i_ang)
-          auxHfD(4) = -x0_DD_FACTOR * dens_pnt(4,i_r,i_ang)
+          auxHfD(3) = -x0_DD_FACTOR * dens_pnt(K,3,i_r,i_ang)
+          auxHfD(4) = -x0_DD_FACTOR * dens_pnt(K,4,i_r,i_ang)
           endif
         do Tac = 1, 4
           auxHfD(Tac) = sumD_ang * auxHfD(Tac)
@@ -3801,46 +3926,46 @@ do a = 1, spO2
         aux_PE = zzero
         aux = zzero
         do ms = 1, 4
-          aux(ms) = BulkHF(1,ms, i_r, i_ang) !pp
-          aux(ms) = aux(ms) - (x0_DD_FACTOR * BulkHF(5,ms, i_r, i_ang)) !tot
+          aux(ms) = BulkHF(K,1,ms, i_r, i_ang) !pp
+          aux(ms) = aux(ms) - (x0_DD_FACTOR * BulkHF(K,5,ms, i_r, i_ang)) !tot
           aux(ms) = aux(ms) * AngFunctDUAL_HF(ms, a,c, i_ang)
           auxHfE(1)  = auxHfE(1) + aux(ms)
 
-          aux(ms) = BulkHF(2,ms, i_r, i_ang) !nn
-          aux(ms) = aux(ms) - (x0_DD_FACTOR * BulkHF(5,ms, i_r, i_ang))
+          aux(ms) = BulkHF(K,2,ms, i_r, i_ang) !nn
+          aux(ms) = aux(ms) - (x0_DD_FACTOR * BulkHF(K,5,ms, i_r, i_ang))
           aux(ms) = aux(ms) * AngFunctDUAL_HF(ms, a,c, i_ang)
           auxHfE(2)  = auxHfE(2) + aux(ms)
             !pn np part
           if (CALCULATE_DD_PN_PA) then
-          aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(3,ms, i_r,i_ang) !pn
+          aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(K,3,ms, i_r,i_ang) !pn
           auxHfE(3)  = auxHfE(3) + aux(ms)
-          aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(4,ms, i_r,i_ang) !np
+          aux(ms) = AngFunctDUAL_HF(ms,a,c, i_ang) * BulkHF(K,4,ms, i_r,i_ang) !np
           auxHfE(4)  = auxHfE(4) + aux(ms)
           endif
 
           !! NOTE: Angular 1, 2 functions are defined with direct form of ms,ms'
           if (hasX0M1) then
-            aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1(1,ms,i_r,i_ang) !pp
+            aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1(K,1,ms,i_r,i_ang) !pp
             aux_PE(1) = aux_PE(1)  + (X0M1*aux(ms))
-            aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1(2,ms,i_r,i_ang) !nn
+            aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1(K,2,ms,i_r,i_ang) !nn
             aux_PE(2) = aux_PE(2)  + (X0M1*aux(ms))
           endif
 
           !! pn np part, x0 dependence was calculated in BulkP1_**
           if (CALCULATE_DD_PN_PA) then
-          aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1(3,ms, i_r,i_ang) !pn
+          aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1(K,3,ms, i_r,i_ang) !pn
           aux_PE(3)  = aux_PE(3)  + aux(ms)
-          aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1(4,ms, i_r,i_ang) !np
+          aux(ms) = AngFunctDUAL_P2(ms,a,c, i_ang) * BulkP1(K,4,ms, i_r,i_ang) !np
           aux_PE(4)  = aux_PE(4)  + aux(ms)
           endif
           !! TEST -----------------------------------------------------------
           if (PRNT_)then
             !! Integrals for the Pairing Independently
             do Tac = 1, 4
-            aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1(Tac,ms,i_r,i_ang)
+            aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1(K,Tac,ms,i_r,i_ang)
             if ((Tac .EQ. 1).OR.(Tac .EQ. 2)) aux(ms) = aux(ms) * X0M1
             int_test_PE(Tac,ms,a,c) = int_test_PE(Tac,ms,a,c) + &
-              (weight_LEB(i_ang) * rad_ac * dens_alpha(i_r,i_ang) * aux(ms))
+              (weight_LEB(i_ang) * rad_ac * dens_alpha(K,i_r,i_ang) * aux(ms))
             end do
 
             if ((i_r == R_PRINT).AND.(i_ang == ANG_PRINT)) then
@@ -3857,25 +3982,25 @@ do a = 1, spO2
         if (has_HEIS_MAJO_TERMS) then
           if (a.eq.1 .AND. c.eq.1 .and. i_r.eq.1 .AND. i_ang.EQ.1) &
             print *, "evaluating calcu HM fields"
-          call calculate_fields_DD_HM(a,c, i_r,i_ang, auxHfD, auxHfE, aux_PE)
+          call calculate_fields_DD_HM(K,a,c, i_r,i_ang, auxHfD, auxHfE, aux_PE)
         endif
 
         !! EXCHANGE Sum terms and add to the global (r,ang) value to integrate
         do Tac =  1, 4
-          aux_hf(Tac)   = weight_LEB(i_ang) * rad_ac * dens_alpha(i_r,i_ang)
+          aux_hf(Tac)   = weight_LEB(i_ang) * rad_ac * dens_alpha(K,i_r,i_ang)
           aux_hf(Tac)   = (auxHfD(Tac) - auxHfE(Tac)) * aux_hf(Tac)
           int_hf(Tac)   = int_hf(Tac) + aux_hf(Tac)
 
-          aux_pair(Tac) = weight_LEB(i_ang) * rad_ac * dens_alpha(i_r,i_ang)
+          aux_pair(Tac) = weight_LEB(i_ang) * rad_ac * dens_alpha(K,i_r,i_ang)
           aux_pair(Tac) = aux_PE(Tac) * aux_pair(Tac)
           int_pa(Tac)   = int_pa(Tac) + aux_pair(Tac)
         enddo
 
         auxRea = zzero
         if (EVAL_REARRANGEMENT) then
-          auxRea  = REACommonFields(i_r,i_ang) * dens_alpm1(i_r,i_ang)
-          auxRea  = auxRea * rea_common_RadAng(a,c, i_r, i_ang)
-          auxRea  = auxRea * dexp( (2.0d0+alpha_DD) * (r(i_r)/HO_b)**2)
+          auxRea  = REACommonFields(K,i_r,i_ang) * dens_alpm1(K,i_r,i_ang)
+          auxRea  = auxRea * rea_common_RadAng(K,a,c, i_r, i_ang)
+          auxRea  = auxRea * dexp( (2.0d0+alpha_DD) * (r(K,i_r)/HO_b)**2)
           int_rea = int_rea + (auxRea * weight_R(i_r) * weight_LEB(i_ang))
         endif
         ! rearrange for pn and np are the same (pn/np are Zero)
@@ -3895,7 +4020,7 @@ do a = 1, spO2
     end do
     int_rea = int_rea * 0.25d+0 * integral_factor * alpha_DD
 
-    call complete_DD_fields(int_hf, int_pa, int_rea, gammaLR, deltaLR,deltaRL,&
+    call complete_DD_fields(int_hf, int_pa, int_rea, gammaLR,deltaLR,deltaRL,&
                             hspLR, gammaLR_DD, deltaLR_DD, deltaRL_DD, &
                             a, c, spO2, ndim)
 
@@ -3948,7 +4073,7 @@ if (EVAL_CUTOFF .AND. (CUTOFF_MODE.NE.2)) then
 endif
 
 !! save the last EDF HFB of the DD term
-last_HFB_energy = zero
+if (K .EQ. 1) last_HFB_energy = zero
 if (evalQuasiParticleVSpace .OR. exportValSpace) then
 
 call zgemm('n','n',ndim,ndim,ndim,zone,hamil_H1,ndim,rhoLR,ndim,zzero, A1,ndim)
@@ -3959,7 +4084,7 @@ do a=1, ndim
 end do
 endif
 
-if (PRNT_) then
+if (PRNT_ .AND. (K .EQ. number_DD_terms)) then
   close(555)
   close(556)
   close(557)
@@ -3972,8 +4097,10 @@ if (PRNT_.OR.doTraceTest_) then
   t_gam_sum = zzero
 
   if (PRNT_) then
-    open (620, file='fields_matrix.gut')
-    open (621, file='fields_matrix_imag.gut')
+    if (K .EQ. 1) then
+      open (620, file='fields_matrix.gut')
+      open (621, file='fields_matrix_imag.gut')
+    endif
     write(620,fmt='(A,A,A)') "  i   j        gammaLR       gammaLR_DD    ",&
       "    DeltaLR        DeltaLR_DD       DeltaRL        DeltaRL_DD     ",&
       "ReaField_DD         hspLR       hspLR_dd     hspLR_rea"
@@ -4015,8 +4142,10 @@ if (PRNT_.OR.doTraceTest_) then
     endif !!! ********************************************************* DELETE
   endif
 
-  if (PRNT_) close(620)
-  if (PRNT_) close(621)
+  if (PRNT_ .AND. (K .EQ. number_DD_terms)) then
+    close(620)
+    close(621)
+  endif
 endif
 
 end subroutine calculate_fields_DD
@@ -4032,10 +4161,21 @@ subroutine compute_fields_DD_selector(gammaLR,hspLR,deltaLR,deltaRL,ndim)
   !! The density fields are added to the calculated with the standard hamiltonian
   !! This array variables are local
   complex(r64), dimension(ndim,ndim) :: gammaLR_DD, deltaLR_DD, deltaRL_DD
+  integer   :: K
 
+  do  K = 1, number_DD_terms
 
-  print *, " [WARNING] Unimplemented method, calling [calculate_fields_DD]"
-  call calculate_fields_DD(gammaLR,hspLR,deltaLR,deltaRL,ndim)
+    alpha_DD          = parameters_alp1x0x0Hx0M(K, 1)
+    t3_DD_CONST       = parameters_alp1x0x0Hx0M(K, 2)
+    x0_DD_FACTOR      = parameters_alp1x0x0Hx0M(K, 3)
+    CONST_x0_EXC_HEIS = parameters_alp1x0x0Hx0M(K, 4)
+    CONST_x0_EXC_MAJO = parameters_alp1x0x0Hx0M(K, 5)
+
+    REACommonFields   = zero
+
+    call calculate_fields_DD(gammaLR,hspLR,deltaLR,deltaRL, K, ndim)
+  end do
+
 end subroutine compute_fields_DD_selector
 
 !-----------------------------------------------------------------------------!
@@ -4251,6 +4391,8 @@ end do
 
 !print "(A,I5)", " -cutoff subroutine DONE, iter =", iteration
 end subroutine cutoff_by_kappa_matrix
+
+
 
 subroutine cutoff_by_hspfield_matrix(hspLR, deltaLR, deltaRL, &
                                      deltaLR_DD, deltaRL_DD, ndim)
@@ -4474,10 +4616,10 @@ end subroutine cutoff_by_hspfield_matrix
 
 subroutine reeval_pairing_fields_after_cutoff(only_bulk_fields, hspLR, &
                                               deltaLR,deltaRL, &
-                                              deltaLR_DD, deltaRL_DD, ndim)
+                                              deltaLR_DD, deltaRL_DD, K, ndim)
 
 logical, intent(in) :: only_bulk_fields
-integer, intent(in) :: ndim
+integer, intent(in) :: K, ndim
 complex(r64), dimension(ndim,ndim) :: hspLR, deltaLR, deltaRL
 
 real(r64),    dimension(ndim,ndim) :: BU_gammaRR_DD
@@ -4512,7 +4654,7 @@ do i_r = 1, r_dim
   enddo
 enddo
 
-call calculate_common_rearrang_bulkFields
+call calculate_common_rearrang_bulkFields(K)
 
 if (only_bulk_fields) return  !! ========================================
 
@@ -4646,11 +4788,13 @@ end subroutine progress_bar_iteration
 ! matrix: n-1 (l-1, l, l+1), n (l-1, l, l+1), n+1 (l-1, l, l+1)               !
 !-----------------------------------------------------------------------------!
 subroutine set_Radial1b_derivates
-integer   :: a_sh, n, l, n2, l2, i_l, i_n, i_r
+integer   :: a_sh, n, l, n2, l2, i_l, i_n, i_r, K
 real(r64) :: radial
 
 allocate(radial_1b_diff_memo(HOsh_dim, -1:1, -1:1, r_dim))
 radial_1b_diff_memo = zero
+
+do K = 1, number_DD_terms
 
 do a_sh = 1, HOsh_dim
   n = HOsh_n(a_sh)
@@ -4664,14 +4808,15 @@ do a_sh = 1, HOsh_dim
       if (l2.LT.0) cycle
 
       do i_r = 1, r_dim
-        radial = radial_function(n2, l2, r(i_r))  ! r = b * sqrt(x/(alpha+2))
-                                                  ! already 1/b**3
-        radial_1b_diff_memo(a_sh, i_n, i_l, i_r) = radial
+        radial = radial_function(n2, l2, r(K, i_r))  ! r = b * sqrt(x/(alpha+2))
+                                                     ! already 1/b**3
+        radial_1b_diff_memo(K, a_sh, i_n, i_l, i_r) = radial
       enddo
 
     end do
   end do
 enddo
+enddo ! K loop
 end subroutine set_Radial1b_derivates
 
 
@@ -4686,7 +4831,7 @@ integer, intent(in) :: ndim
 real(r64), dimension(ndim,ndim), intent(in) :: dens_rhoRR, dens_kappaRR
 
 integer   :: a, b, i_r,i_an, na,la,ja,mja, nb,lb,jb,mjb, a_sh, b_sh
-integer   :: mla, mlb, ms, K1, M1, K2, M2, mu_, ADK2, indxa, t
+integer   :: mla, mlb, ms, K1, M1, K2, M2, mu_, ADK2, indxa, t, K
 
 real(r64) :: aux1, aux2, aux3, cgc1, cgc2, cgc3, g_kl, xikl, rad, dd_prod
 real(r64), dimension(:), allocatable :: rad_diffs
@@ -4696,12 +4841,39 @@ complex(r64), dimension(:,:,:), allocatable :: prea_dir, prea_exc
 complex(r64) :: ang
 integer   :: ma,mb, c,lc,jc,mc, d,ld,jd,md, indx_a,indx_b,indx_c,indx_d, &
              indx_km1,indx_km2
+character(len=24) :: filename_
+character(len=1)  :: kstr_
+
 !! Angular part is a Y_KM, up to l_max+1 (sph_harmonics_memo is up to 2*l_max)
 
 allocate(rad_diffs(r_dim))
-allocate(partial_dens(-1:2,r_dim,angular_dim))
+allocate(partial_dens(number_DD_terms, -1:2,r_dim,angular_dim))
+allocate(rea_dens(r_dim, angular_dim), &
+         prea_dir(2,r_dim, angular_dim), prea_exc(2,r_dim, angular_dim))
+
 partial_dens = zzero
+
+!! ----------------- Necessary for the Rearrangement tests.
+!allocate(REACommonFields(r_dim, angular_dim))
+!allocate(BulkP1(5,4,r_dim, angular_dim), BulkP2(5,4,r_dim, angular_dim))
+!BulkP1 = zzero
+!BulkP2 = zzero
+
+REACommonFields = zero !! outside Calculate rearr bulk fields
+do K = 1, number_DD_terms
+
+call calculate_common_rearrang_bulkFields(K)
 !!
+!! FILE for the de debugging
+write (kstr_, "(I1)") K
+filename_ = 'dens_differential_k'// trim(kstr_) //'.gut'
+
+
+alpha_DD     = parameters_alp1x0x0Hx0M(K, 1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K, 2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K, 3)
+rad_diffs = zero
+
 do a = 1, HOsp_dim
   a_sh = HOsp_sh(a)
   la = HOsp_l(a)
@@ -4720,14 +4892,14 @@ do a = 1, HOsp_dim
     do i_r = 1, r_dim
       if (na .GT. 0) then
         rad_diffs(i_r) = rad_diffs(i_r) + (&
-                                     radial_1b_diff_memo(a_sh,-1,+1,i_r) * &
-                                     radial_1b_diff_memo(b_sh, 0, 0,i_r) / &
+                                     radial_1b_diff_memo(K,a_sh,-1,+1,i_r) * &
+                                     radial_1b_diff_memo(K,b_sh, 0, 0,i_r) / &
                                      sqrt(na + 0.0d0))
       endif
       if (nb .GT. 0) then
         rad_diffs(i_r) = rad_diffs(i_r) + (&
-                                     radial_1b_diff_memo(a_sh, 0, 0,i_r) * &
-                                     radial_1b_diff_memo(b_sh,-1,+1,i_r) / &
+                                     radial_1b_diff_memo(K,a_sh, 0, 0,i_r) * &
+                                     radial_1b_diff_memo(K,b_sh,-1,+1,i_r) / &
                                      sqrt(nb + 0.0d0))
       endif
     enddo
@@ -4787,11 +4959,11 @@ do a = 1, HOsp_dim
             do i_an = 1, angular_dim
               do i_r = 1, r_dim
                 !! radial  2b functions and diff parts precalculated.
-                rad = ((xikl+ (la+lb)) * HO_b / r(i_r)) - (2.0d0 * r(i_r)/HO_b)
-                rad = rad * radial_2b_sho_memo(a_sh, b_sh, i_r) / HO_b
+                rad = ((xikl+ (la+lb)) * HO_b/r(K,i_r)) - (2.0d0*r(K,i_r)/HO_b)
+                rad = rad * radial_2b_sho_memo(K, a_sh, b_sh, i_r) / HO_b
                 rad = rad + (rad_diffs(i_r) / HO_b)
 
-                partial_dens(mu_,i_r,i_an) = partial_dens(mu_,i_r,i_an) + &
+                partial_dens(K,mu_,i_r,i_an) = partial_dens(K,mu_,i_r,i_an) +&
                                   aux3 * rad * sph_harmonics_memo(indxa, i_an)
               enddo
             enddo !loop angular-radial
@@ -4806,10 +4978,7 @@ do a = 1, HOsp_dim
   enddo
 enddo
 
-
 !! test to evaluate the rearrangement density
-allocate(rea_dens(r_dim, angular_dim), &
-         prea_dir(2,r_dim, angular_dim), prea_exc(2,r_dim, angular_dim))
 rea_dens = zzero
 prea_dir = zzero
 prea_exc = zzero
@@ -4857,8 +5026,8 @@ do K1 = max(0, abs(ja - jc) / 2), (ja + jc) / 2
     cgc2 = dens_Y_KM_me(indx_b,indx_d,indx_km2)
     if (dabs(cgc2) .LT. 1.0e-6) cycle
 do i_r = 1, r_dim
-  rad = radial_2b_sho_memo(HOsp_sh(a), HOsp_sh(c), i_r) * &
-        radial_2b_sho_memo(HOsp_sh(b), HOsp_sh(d), i_r)
+  rad = radial_2b_sho_memo(K, HOsp_sh(a), HOsp_sh(c), i_r) * &
+        radial_2b_sho_memo(K, HOsp_sh(b), HOsp_sh(d), i_r)
   do i_an = 1, angular_dim
     ang = cgc1 * cgc2 * sph_harmonics_memo(indx_km1,i_an) * &
                         sph_harmonics_memo(indx_km2,i_an)
@@ -4887,8 +5056,8 @@ do K1 = max(0, abs(ja - jd) / 2), (ja + jd) / 2
     cgc2 = dens_Y_KM_me(indx_b,indx_c,indx_km2)
     if (dabs(cgc2) .LT. 1.0e-6) cycle
 do i_r = 1, r_dim
-  rad = radial_2b_sho_memo(HOsp_sh(a), HOsp_sh(c), i_r) * &
-        radial_2b_sho_memo(HOsp_sh(b), HOsp_sh(d), i_r)
+  rad = radial_2b_sho_memo(K, HOsp_sh(a), HOsp_sh(c), i_r) * &
+        radial_2b_sho_memo(K, HOsp_sh(b), HOsp_sh(d), i_r)
   do i_an = 1, angular_dim
     ang = cgc1 * cgc2 * sph_harmonics_memo(indx_km1,i_an) * &
                         sph_harmonics_memo(indx_km2,i_an)
@@ -4903,12 +5072,6 @@ enddo
     end do
   end do
 end do
-!allocate(REACommonFields(r_dim, angular_dim))
-!allocate(BulkP1(5,4,r_dim, angular_dim), BulkP2(5,4,r_dim, angular_dim))
-!BulkP1 = zzero
-!BulkP2 = zzero
-
-call calculate_common_rearrang_bulkFields
 
 !deallocate(BulkP1, BulkP2)
 
@@ -4918,17 +5081,18 @@ call calculate_common_rearrang_bulkFields
 do i_r = 1, r_dim
   do i_an = 1, angular_dim
     do mu_ = -1, 1
-      partial_dens(2,i_r,i_an) = partial_dens(  2,i_r,i_an) + &
-        ((-1)**mu_) * partial_dens(mu_,i_r,i_an) * partial_dens(-mu_,i_r,i_an)
+      partial_dens(K,2,i_r,i_an) = partial_dens(K, 2,i_r,i_an) + &
+                                  ((-1)**mu_) * partial_dens(K, mu_,i_r,i_an)&
+                                              * partial_dens(K,-mu_,i_r,i_an)
     enddo
     do t=1, 2
       prea_dir(t,i_r,i_an) = prea_dir(t,i_r,i_an) + ( &
-                  (dens_pnt(5,i_r,i_an) - x0_DD_FACTOR*dens_pnt(t,i_r,i_an)))
+              (dens_pnt(K,5,i_r,i_an) - x0_DD_FACTOR*dens_pnt(K,t,i_r,i_an)))
       !! Equivalent to the effect of all exchange bulk densities (does not
       !! contribute equally for each 2-body function, it depends on msms')
       do ms = 1, 4
         prea_exc(t,i_r,i_an) = prea_exc(t,i_r,i_an) - ( &
-                  (BulkHF(t,ms,i_r,i_an) - x0_DD_FACTOR*BulkHF(5,ms,i_r,i_an)))
+              (BulkHF(K,t,ms,i_r,i_an) - x0_DD_FACTOR*BulkHF(K,5,ms,i_r,i_an)))
       enddo
 
     enddo
@@ -4936,7 +5100,7 @@ do i_r = 1, r_dim
 enddo
 
 !! scalar product / export for test
-open (111, file='dens_differential.gut')
+open (111, file=filename_)
 write(111, fmt="(A)") "  i_r i_an r(ir)    grad_den_-1     imag(grad_-1)     &
         &grad_den_0      imag(grad_0)     grad_den_+1    imag(grad_+1)    &
         &R(Laplacian)   sqrt(R(Laplac))       R(dens)   R(dens_alpha)     &
@@ -4948,27 +5112,31 @@ do i_r = 1, r_dim
     write(111,fmt='(2(I4,A),F5.2)',advance='no') i_r, ",", i_an, ",", r(i_r)
     do mu_ = -1, 1
       write(111,fmt='(A,F15.9,A,F15.9,A)',advance='no') ",", &
-    dreal(partial_dens(mu_,i_r,i_an)), " ",dimag(partial_dens(mu_,i_r,i_an)),"j"
+    dreal(partial_dens(K,mu_,i_r,i_an)), " ",dimag(partial_dens(K,mu_,i_r,i_an)),"j"
     enddo
-    if (dabs(dimag(partial_dens(2,i_r,i_an))).GT.1.0e-9) then
+    if (dabs(dimag(partial_dens(K,2,i_r,i_an))).GT.1.0e-9) then
       print "(A,2I4,D15.9,A)","[ERROR IMAG] grad diff imag > 1e-9:",&
-                              i_r, i_an, partial_dens(2,i_r,i_an)
+                              i_r, i_an, partial_dens(K,2,i_r,i_an)
     endif
 
     write(111,fmt='(A,F15.9,A,F15.9)', advance='no') ",", &
-      dreal(partial_dens(2,i_r,i_an)), ",",&
-      dreal(partial_dens(2,i_r,i_an))**0.5d0
+      dreal(partial_dens(K,2,i_r,i_an)), ",",&
+      dreal(partial_dens(K,2,i_r,i_an))**0.5d0
     write(111,fmt='(A,F15.9,A,F15.9)', advance='no') ",", &
-      dreal(dens_pnt(5,i_r,i_an)), ", ", dreal(dens_alpha(i_r, i_an))
+      dreal(dens_pnt(K,5,i_r,i_an)), ", ", dreal(dens_alpha(K,i_r, i_an))
     !!! export the test for the rea_density
     write(111,fmt='(6(A,F15.9))') &
-      ",", dreal(rea_dens(i_r,i_an)), " ", dreal(REACommonFields(i_r,i_an)),&
+      ",", dreal(rea_dens(i_r,i_an)), " ", dreal(REACommonFields(K,i_r,i_an)),&
       ",", dreal(prea_dir(1,i_r, i_an)), " ", dreal(prea_dir(2,i_r, i_an)),&
       ",", dreal(prea_exc(1,i_r, i_an)), " ", dreal(prea_exc(2,i_r, i_an))
   end do
 end do
 close(111)
+
 !deallocate(REACommonFields)
+enddo ! K loop
+
+deallocate(rea_dens, prea_dir, prea_exc, rad_diffs)
 
 end subroutine calculate_density_laplacian
 
@@ -5001,9 +5169,9 @@ end subroutine set_derivative_density_dependent
 !                       v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)
 !             in this case, a,b,c,d are <= HOsp_dim / 2
 !-----------------------------------------------------------------------------!
-function matrix_element_v_gradientDD(a,b, c,d) result (v_dd_val_Real)
+function matrix_element_v_gradientDD(a,b, c,d, K) result (v_dd_val_Real)
 
-integer(i32), intent(in) :: a,b,c,d
+integer(i32), intent(in) :: a,b,c,d, K
 real(r64), dimension(4) :: v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)
 
 integer      :: K,K2,M,M2, ind_km, ind_km_q, ind_jm_a,ind_jm_b,ind_jm_c, &
@@ -5013,6 +5181,11 @@ complex(r64), dimension(4) :: v_dd_value
 real(r64)    :: angular, integral_factor
 integer(i32) :: a_sh, b_sh, c_sh, d_sh, i_r, i_ang
 integer      :: print_element = 0, HOspO2, skpd
+
+
+alpha_DD     = parameters_alp1x0x0Hx0M(K, 1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K, 2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K, 3)
 
 HOspO2 = HOsp_dim/2
 
@@ -5054,9 +5227,9 @@ integral_factor = integral_factor * 4 * pi  ! add Lebedev norm factor
 
 do i_r = 1, r_dim
 
-  radial = weight_R(i_r) * radial_2b_sho_memo(a_sh, c_sh, i_r) &
-                         * radial_2b_sho_memo(b_sh, d_sh, i_r) &
-                         * exp((alpha_DD + 2.0d0) * (r(i_r) / HO_b)**2)
+  radial = weight_R(i_r) * radial_2b_sho_memo(K, a_sh, c_sh, i_r) &
+                         * radial_2b_sho_memo(K, b_sh, d_sh, i_r) &
+                         * exp((alpha_DD + 2.0d0) * (r(K, i_r) / HO_b)**2)
   !! NOTE: the inclusion of the exponential part included for the same reason as
   !!       in the DD and rearrangement matrix elements subroutine, (see there)
   !!                    * exp((alpha_DD + 2.0d0 + 2.0d0) * (r(i_r) / HO_b)**2)
@@ -5073,8 +5246,8 @@ do i_r = 1, r_dim
                 *(AngFunctDUAL_HF(1,b,c,i_ang) + AngFunctDUAL_HF(4,b,c,i_ang))
 
       angular = weight_LEB(i_ang)
-      dens_part = dens_alpm1(i_r,i_ang) * &
-                  (dreal(partial_dens(2,i_r,i_ang))**0.5d0)
+      dens_part = dens_alpm1(K, i_r,i_ang) * &
+                  (dreal(partial_dens(K,2,i_r,i_ang))**0.5d0)
 
       !v_nnnn = v_pppp
       aux = radial * angular * (1-x0_DD_FACTOR) * (aux_dir - aux_exch)
@@ -5118,7 +5291,7 @@ subroutine calculate_energy_field_laplacian(E_core)
 
 real(r64), intent(out) :: E_core
 complex(r64), dimension(:,:), allocatable :: psrea_field
-integer :: a,c, spO2, ms, i_r, i_a, a_sh, c_sh, aa, cc, t
+integer :: a,c, spO2, ms, i_r, i_a, a_sh, c_sh, aa, cc, t, K
 complex(r64), dimension(2) :: auxD, auxE
 complex(r64) :: sumD_a1, sumD_a2
 real(r64) :: int_const, rad_ac
@@ -5128,6 +5301,13 @@ spO2 = HOsp_dim / 2
 !! compute the field for the pseudo-rearrangement
 allocate(psrea_field(HOsp_dim, HOsp_dim))
 psrea_field = zzero
+
+do K = 1, number_DD_terms
+
+alpha_DD     = parameters_alp1x0x0Hx0M(K,1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K,2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K,3)
+
 int_const = 0.5d0 * (HO_b**3) / ((2.0d0 + alpha_DD)**1.5d0)
 int_const = 4.0d0 * pi * int_const
 !!
@@ -5139,27 +5319,27 @@ do a = 1, spO2
     c_sh = HOsp_sh(c)
 
     do i_r = 1, r_dim
-      rad_ac = weight_R(i_r) * radial_2b_sho_memo(a_sh, c_sh, i_r)
-      rad_ac = rad_ac * dexp((2.0d0+alpha_DD) * (r(i_r)/HO_b)**2)
+      rad_ac = weight_R(i_r) * radial_2b_sho_memo(K,a_sh, c_sh, i_r)
+      rad_ac = rad_ac * dexp((2.0d0+alpha_DD) * (r(K,i_r)/HO_b)**2)
       do i_a = 1, angular_dim
         auxD = zzero
         auxE = zzero
 
         sumD_a1 = AngFunctDUAL_HF(1,a,c,i_a) + AngFunctDUAL_HF(4,a,c,i_a)
         do t = 1, 2
-          auxD(t) = auxD(t) + sumD_a1*(dens_pnt(5, i_r, i_a) - &
-                                       x0_DD_FACTOR * dens_pnt(t, i_r, i_a))
+          auxD(t) = auxD(t) + sumD_a1*(dens_pnt(K,5, i_r, i_a) - &
+                                       x0_DD_FACTOR * dens_pnt(K,t, i_r, i_a))
           !! exchange
           do ms = 1, 4
             sumD_a2 = AngFunctDUAL_HF(ms, a,c, i_a)
-            auxE(t) = auxE(t) + sumD_a2*(BulkHF(t, ms, i_r,i_a) - &
-                                         x0_DD_FACTOR * BulkHF(5, ms, i_r,i_a))
+            auxE(t) = auxE(t) + sumD_a2*(BulkHF(K,t,ms,i_r,i_a) - &
+                                         x0_DD_FACTOR * BulkHF(K,5,ms,i_r,i_a))
           enddo
           aa = a + ((t - 1)*spO2)
           cc = c + ((t - 1)*spO2)
           psrea_field(aa,cc) = psrea_field(aa,cc) + &
             (int_const * weight_LEB(i_a) * rad_ac * dens_alpm1(i_r,i_a) * &
-            (dreal(partial_dens(2,i_r,i_a))**0.5d0)* (auxD(t) - auxE(t)))
+            (dreal(partial_dens(K,2,i_r,i_a))**0.5d0)* (auxD(t) - auxE(t)))
         end do
 
       enddo
@@ -5167,6 +5347,7 @@ do a = 1, spO2
 
   enddo
 enddo
+enddo !K loop
 
 !! Do the trace for the energy
 E_core = 0.0
@@ -5426,9 +5607,9 @@ end function matrix_element_pseudoRearrangement_v2
 ! ## NOTE     pnnp = - pnpn(2)  and nppn = - npnp(3)
 !             in this case, a,b,c,d are <= HOsp_dim / 2                       !
 !-----------------------------------------------------------------------------!
-function matrix_element_pseudoRearrangement(a,b, c,d) result (v_dd_val_Real)
+function matrix_element_pseudoRearrangement(a,b, c,d, K) result (v_dd_val_Real)
 
-integer(i32), intent(in) :: a,b,c,d
+integer(i32), intent(in) :: a,b,c,d, K
 real(r64), dimension(4) :: v_dd_val_Real !! pppp(1), pnpn(2), pnnp(3), nnnn(4)
 
 integer      :: ms, tt
@@ -5437,6 +5618,11 @@ complex(r64), dimension(4) :: v_dd_value, term1, term2, aux1, aux2, aux3
 real(r64)    :: angular, integral_factor, const_1, const_4
 integer(i32) :: a_sh, b_sh, c_sh, d_sh, i_r, i_a
 integer      :: HOspO2
+
+
+alpha_DD     = parameters_alp1x0x0Hx0M(K, 1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K, 2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K, 3)
 
 HOspO2 = HOsp_dim/2
 
@@ -5461,7 +5647,7 @@ const_1 = 4.0d0 * alpha_DD
 const_4 = alpha_DD !* (alpha_DD - 1.0d0)
 
 do i_r = 1, r_dim
-  radial = weight_R(i_r) * exp((alpha_DD + 2.0d0) * (r(i_r) / HO_b)**2)
+  radial = weight_R(i_r) * exp((alpha_DD + 2.0d0) * (r(K,i_r) / HO_b)**2)
   do i_a = 1, angular_dim
 
     !! first term, (derivative of each rho_matrix)
@@ -5470,9 +5656,9 @@ do i_r = 1, r_dim
     aux3 = zzero
 
     !! second term. (derivative of the inner rho^(alpha-1) )
-    aux4 = rea_common_RadAng(b,d, i_r, i_a) * rea_common_RadAng(a,c, i_r, i_a)
-    aux4 = aux4 * REACommonFields(i_r, i_a)
-    aux4 = aux4 * dens_alpm1(i_r, i_a) / dens_pnt(5, i_r, i_a)
+    aux4 = rea_common_RadAng(K,b,d, i_r, i_a)*rea_common_RadAng(K,a,c, i_r, i_a)
+    aux4 = aux4 * REACommonFields(K,i_r, i_a)
+    aux4 = aux4 * dens_alpm1(K,i_r, i_a) / dens_pnt(K,5, i_r, i_a)
     aux4 = aux4 * const_4
 
     angular = weight_LEB(i_a)
@@ -5645,17 +5831,25 @@ endfunction two_shell_states_index
 !------------------------------------------------------------------------------!
 subroutine test_integrate_bulk_densities
 
-integer :: i_r, i_a, i_t, ms, tt
+integer :: i_r, i_a, i_t, ms, tt, K
 real(r64)    :: radInt, int_fact, int_const
 complex(r64), dimension(4)   :: int_dens  ! [pp, nn, pn, np]
 complex(r64), dimension(5,4) :: int_A, int_B1, int_B2 ! [pp (++,+-,-+,--), nn,pn,np, total]
 complex(r64), dimension(5) :: sum_A, sum_B1, sum_B2
 character(len=28) :: fmt1 , fmt2
+character(len=26) :: filename_
+character(len=1)  :: kstr_
 character(len=4), dimension(4) :: ms_str
 ms_str = [character(len=4) :: " ++ ", " +- ", " -+ ", " -- "]
 fmt1 = '(A,4(F17.12,SP,F16.12,"j")))'
 fmt2 = '(A,5(F17.12,SP,F16.12,"j")))'
 
+do K = 1, number_DD_terms
+
+  write (kstr_, "(I1)") K
+  filename_ = 'test_dens_integrals_K'// trim(kstr_) //'.gut'
+
+alpha_DD = parameters_alp1x0x0Hx0M(K,1)
 int_dens = zzero
 int_A    = zzero
 int_B1   = zzero
@@ -5665,19 +5859,19 @@ int_const =  2 * pi * (HO_b**3) / ((2.0 + alpha_DD)**1.5)
 
 do i_r = 1, r_dim
   !! [TEST] For the density to be integrated in the variable for the m.e.
-  radInt = int_const * weight_R(i_r) * exp((r(i_r)/HO_b)**2 * (1.0+alpha_DD))
+  radInt = int_const * weight_R(i_r) * exp((r(K,i_r)/HO_b)**2 * (1.0+alpha_DD))
   do i_a = 1, angular_dim
     int_fact = radInt * weight_LEB(i_a)
 
     do i_t = 1, 4
-      int_dens(i_t) = int_dens(i_t) + (int_fact*dens_pnt(i_t, i_r, i_a))
+      int_dens(i_t) = int_dens(i_t) + (int_fact*dens_pnt(K,i_t, i_r, i_a))
     enddo
     !! TOTAL bulk densities
     do ms = 1, 4
       do tt = 1, 5
-        int_A (tt, ms) = int_A (tt, ms) + (int_fact * BulkHF(tt,ms, i_r, i_a))
-        int_B1(tt, ms) = int_B1(tt, ms) + (int_fact * BulkP1(tt,ms, i_r, i_a))
-        int_B2(tt, ms) = int_B2(tt, ms) + (int_fact * BulkP2(tt,ms, i_r, i_a))
+        int_A (tt, ms) = int_A (tt, ms) + (int_fact * BulkHF(K,tt,ms, i_r, i_a))
+        int_B1(tt, ms) = int_B1(tt, ms) + (int_fact * BulkP1(K,tt,ms, i_r, i_a))
+        int_B2(tt, ms) = int_B2(tt, ms) + (int_fact * BulkP2(K,tt,ms, i_r, i_a))
       enddo
     end do
   enddo
@@ -5688,7 +5882,7 @@ sum_B1 = zzero
 sum_B2 = zzero
 
 !!! WRITE STUFF --------------------------------------------------------------
-open(321, file='test_dens_integrals.gut')
+open(321, file=filename_)
 write(321, fmt='(A)') " [TEST] Integrals of Bulk densities over R3 (approx)"
 write(321, fmt='(A)') "   RHO"
 write(321, fmt='(12x,"real(pp)",10x,"imag(pp)",8x,"real(nn)",10x,&
@@ -5736,6 +5930,7 @@ enddo
 write(321, fmt=fmt2) " tt ", sum_B2(1),sum_B2(2),sum_B2(3),sum_B2(4),sum_B2(5)
 
 close(321) !!! ---------------------------------------------------------------
+enddo ! K loop
 
 end subroutine test_integrate_bulk_densities
 
@@ -5745,11 +5940,11 @@ end subroutine test_integrate_bulk_densities
 subroutine test_export_pnpn_mmee_uncoupled(ndim)
 
 integer, intent(in)     :: ndim
-integer                 :: a, b, c, d, nO2, kk,i1,i2,i3,i4, &
+integer                 :: a, b, c, d, nO2, kk,i1,i2,i3,i4, K,&
                            ab_indx, cd_indx, it, perm, ii1,ii2,ii3,ii4, tt, sg_
 real(r64) :: h2b_64
 real(r32) :: h2b
-real(r64), dimension(4) :: me_val
+real(r64), dimension(4) :: me_val, k_me_val
 integer,   dimension(2) :: non_zero
 real(r32), dimension(:,:), allocatable :: registered_h2b
 logical :: REGISTER_BB
@@ -5872,7 +6067,13 @@ do a = 1, nO2
     do c=1, no2
       do d=1, no2
 
-        me_val = matrix_element_v_DD(a,b,c,d, .TRUE.)
+        me_val = zero
+        do K = 1, number_DD_terms
+          k_me_val = matrix_element_v_DD(a,b,c,d, K, .TRUE.)
+          do tt = 1, 4
+            me_val(tt) = me_val(tt) + k_me_val(tt)
+          end do
+        enddo
 
         !! just check pnpn channel
         if (dabs(me_val(2)) .LT. 1.0d-09) cycle

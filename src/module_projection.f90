@@ -287,7 +287,7 @@ do nangle = nangle_min, nangle_max
       call calculate_fields_DD_explicit(field_gammaLR, field_hspLR, &
                                         field_deltaLR, field_deltaRL, ndim)
     else
-      call calculate_fields_DD(field_gammaLR, field_hspLR, &
+      call compute_fields_DD_selector(field_gammaLR, field_hspLR, &
                                       field_deltaLR, field_deltaRL, ndim)
     endif
     if ((evalQuasiParticleVSpace).AND.(iopt .EQ. 1)) then

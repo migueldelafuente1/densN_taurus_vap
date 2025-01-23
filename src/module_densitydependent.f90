@@ -3851,7 +3851,6 @@ complex(r64), dimension(4) :: aux
 logical :: PRNT_, doTraceTest_
 
 PRNT_ = (PRINT_GUTS).OR.(.FALSE.)
-iteration = iteration + 1
 doTraceTest_ = (iteration.eq.1).OR.(MOD(iteration, 10).EQ.0)
 
 if(doTraceTest_) then !! copy the Fields to plot in the case of printing.
@@ -4181,6 +4180,8 @@ subroutine compute_fields_DD_selector(gammaLR,hspLR,deltaLR,deltaRL,ndim)
   !! This array variables are local
   complex(r64), dimension(ndim,ndim) :: gammaLR_DD, deltaLR_DD, deltaRL_DD
   integer   :: K
+
+  iteration = iteration + 1
 
   do  K = 1, number_DD_terms
 

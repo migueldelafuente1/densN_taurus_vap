@@ -789,20 +789,13 @@ subroutine set_densty_dependent(seedtype, itermax, proj_Mphip, proj_Mphin)
     return
   endif
 
-  print *, 1
   call set_integration_grid
-  print *, 2
   call set_allocate_density_arrays
 
-  print *, 3
   call set_B_radial_coefficients
-  print *, 4
   call set_Radial2body_basis
-  print *, 5
   call set_SphericalHarmonic_basis
-  print *, 6
   call set_Y_KM_matrixElements
-  print *, 7
   call set_rearrangement_RadAng_fucntions
 
   print "(A)", " * Setting up DD module [DONE]"
@@ -3819,15 +3812,15 @@ do ms = 1, 4
 
 enddo ! ms loop
 
-do Tac = 1, 4
-  if (a.lt.10 .AND. c.le.10 .and. i_r.eq.4 .AND. i_ang.EQ.20) then
-    print "(A,3I4,4F10.5)", "EXCH-PAIR a,c,tac=",a,c,Tac, real(auxHfEio(Tac)),&
-      real(auxHfE(Tac)), real(aux_PEio(Tac)), -real(aux_PE(Tac))
-    if (Tac .EQ. 4) print *, ""
-  end if
-  auxHfEio(Tac) = auxHfEio(Tac) + auxHfE(Tac) ! + = -(from fields) * - (HF-Exch is substracted)
-  aux_PEio(Tac) = aux_PEio(Tac) - aux_PE(Tac)
-enddo
+!do Tac = 1, 4
+!  if (a.lt.10 .AND. c.le.10 .and. i_r.eq.4 .AND. i_ang.EQ.20) then
+!    print "(A,3I4,4F10.5)", "EXCH-PAIR a,c,tac=",a,c,Tac, real(auxHfEio(Tac)),&
+!      real(auxHfE(Tac)), real(aux_PEio(Tac)), -real(aux_PE(Tac))
+!    if (Tac .EQ. 4) print *, ""
+!  end if
+!  auxHfEio(Tac) = auxHfEio(Tac) + auxHfE(Tac) ! + = -(from fields) * - (HF-Exch is substracted)
+!  aux_PEio(Tac) = aux_PEio(Tac) - aux_PE(Tac)
+!enddo
 
 end subroutine calculate_fields_DD_HM
 !------------------------------------------------------------------------------!

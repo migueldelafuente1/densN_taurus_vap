@@ -1583,7 +1583,7 @@ end subroutine resetOrSumTotalBulkDens4Fields
 !-----------------------------------------------------------------------------!
 subroutine set_rearrangement_RadAng_fucntions
 
-integer :: a,b,aN,bN, l1,l2,j1,j2, mj1,mj2, ind_jm_1,ind_jm_2, K, M
+integer :: a,b,aN,bN, l1,l2,j1,j2, mj1,mj2, ind_jm_1,ind_jm_2, K2, M2
 integer :: i_r, i_ang, ind_km, spO2, K
 real(r64)    :: radial
 complex(r64) :: ang_rea
@@ -1614,11 +1614,11 @@ do a = 1, spO2 ! avoid pn states
       do i_ang = 1, angular_dim
 !        !! --  Process with spatial 2- body harmonics  -----------------------!
 !        ang_rea = zzero
-!        do K = abs(j1 - j2) / 2, (j1 + j2) / 2
-!          M = (mj2 - mj1)/2
-!          if ((MOD(K + l1 + l2, 2) == 1).OR.(abs(M) > K)) cycle
+!        do K2 = abs(j1 - j2) / 2, (j1 + j2) / 2
+!          M2 = (mj2 - mj1)/2
+!          if ((MOD(K2 + l1 + l2, 2) == 1).OR.(abs(M2) > K2)) cycle
 !
-!          ind_km   = angular_momentum_index(K,  M,  .FALSE.)
+!          ind_km   = angular_momentum_index(K2,  M2,  .FALSE.)
 !
 !          ang_rea = ang_rea + (dens_Y_KM_me(ind_jm_1, ind_jm_2, ind_km) * &
 !                               sph_harmonics_memo(ind_km, i_ang))
@@ -2401,7 +2401,7 @@ if (EVAL_EXPLICIT_FIELDS_DD) then
   TOP = abs(maxval(real(rearrangement_me(KK))))
   LOW = abs(minval(real(rearrangement_me(KK))))
   if (TOP > 1.0D+10) then !((TOP < 1.0D+10).AND.(LOW > 1.E-10)) then
-      print "(A,5I3,2F20.10)", "!! REA", a,b,c,d, KK&
+      print "(A,5I3,2F20.10)", "!! REA", a,b,c,d, KK,&
         minval(real(rearrangement_me(KK))), maxval(real(rearrangement_me(KK)))
   endif
 endif
@@ -3819,7 +3819,7 @@ complex(r64), dimension(ndim,ndim) :: gammaLR_DD, deltaLR_DD, deltaRL_DD
 complex(r64), dimension(ndim,ndim) :: gam1, dltLR1, dltRL1, hsp1,A1,A2,A3
 
 integer   :: a, b, c, d, i, j, spO2, i_r, i_ang, &
-             K, M, ind_jm_a, ind_jm_c, ind_km, Tac, &
+             ind_jm_a, ind_jm_c, ind_km, Tac, &
              a_sh, ja, la, ma, ta, c_sh, jc, lc, mc, tc, ms, &
              PAR, OpPAR, IP, IDN, OpIDN, R_PRINT=3, ANG_PRINT=10
 real(r64) :: rad_ac, X0M1, integral_factor

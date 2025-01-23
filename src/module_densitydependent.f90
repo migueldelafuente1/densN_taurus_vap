@@ -390,7 +390,7 @@ endif
 print *, ''
 
 print "(A)", " * Density dependent parameters imported."
-print "(A,I3)", " * Number of Gaussians in the calculation:", number_DD_terms
+print "(A,I3)", " * Number of Gaussians in the calculation  :", number_DD_terms
 print "(A,2L3)", " * [OPTIONs] Calculate DD-pn parts (HF/PA) :", &
                  CALCULATE_DD_PN_HF, CALCULATE_DD_PN_PA
 
@@ -775,13 +775,20 @@ subroutine set_densty_dependent(seedtype, itermax, proj_Mphip, proj_Mphin)
     return
   endif
 
+  print *, 1
   call set_integration_grid
+  print *, 2
   call set_allocate_density_arrays
 
+  print *, 3
   call set_B_radial_coefficients
+  print *, 4
   call set_Radial2body_basis
+  print *, 5
   call set_SphericalHarmonic_basis
+  print *, 6
   call set_Y_KM_matrixElements
+  print *, 7
   call set_rearrangement_RadAng_fucntions
 
   print "(A)", " * Setting up DD module [DONE]"

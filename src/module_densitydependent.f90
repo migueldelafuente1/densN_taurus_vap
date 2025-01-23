@@ -404,8 +404,8 @@ do K = 1, number_DD_terms
   print "(A,I3,F14.6)", "   > x0 Bartlett    ", K, parameters_alp1x0x0Hx0M(K,3)
   print "(A,I3,F14.6)", "   > x0 Heisenberg  ", K, parameters_alp1x0x0Hx0M(K,4)
   print "(A,I3,F14.6)", "   > x0 Majorana    ", K, parameters_alp1x0x0Hx0M(K,5)
+  print "(A)", ""
 enddo
-print "(A)", ""
 print "(A,2L3)", " * [OPTIONs] Calculate DD-pn parts (HF/PA) :", &
                  CALCULATE_DD_PN_HF, CALCULATE_DD_PN_PA
 

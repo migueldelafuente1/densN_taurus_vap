@@ -390,7 +390,7 @@ endif
 print *, ''
 
 print "(A)", " * Density dependent parameters imported."
-
+print "(A,I3)", " * Number of Gaussians in the calculation:", number_DD_terms
 print "(A,2L3)", " * [OPTIONs] Calculate DD-pn parts (HF/PA) :", &
                  CALCULATE_DD_PN_HF, CALCULATE_DD_PN_PA
 

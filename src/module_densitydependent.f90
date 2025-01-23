@@ -393,11 +393,11 @@ print "(A)", " * Density dependent parameters imported."
 print "(A,I3)", " * Number of Gaussians in the calculation  :", number_DD_terms
 print "(A)", ""
 do K = 1, number_DD_terms
-  print "(A,K3,F12.6)", "   > Wigner t3(MeV) ", K, parameters_alp1x0x0Hx0M(K,1)
-  print "(A,K3,F12.6)", "   > Alpha exp.     ", K, parameters_alp1x0x0Hx0M(K,2)
-  print "(A,K3,F12.6)", "   > x0 Bartlett    ", K, parameters_alp1x0x0Hx0M(K,3)
-  print "(A,K3,F12.6)", "   > x0 Heisenberg  ", K, parameters_alp1x0x0Hx0M(K,4)
-  print "(A,K3,F12.6)", "   > x0 Majorana    ", K, parameters_alp1x0x0Hx0M(K,5)
+  print "(A,I3,F12.6)", "   > Wigner t3(MeV) ", K, parameters_alp1x0x0Hx0M(K,1)
+  print "(A,I3,F12.6)", "   > Alpha exp.     ", K, parameters_alp1x0x0Hx0M(K,2)
+  print "(A,I3,F12.6)", "   > x0 Bartlett    ", K, parameters_alp1x0x0Hx0M(K,3)
+  print "(A,I3,F12.6)", "   > x0 Heisenberg  ", K, parameters_alp1x0x0Hx0M(K,4)
+  print "(A,I3,F12.6)", "   > x0 Majorana    ", K, parameters_alp1x0x0Hx0M(K,5)
 enddo
 print "(A)", ""
 print "(A,2L3)", " * [OPTIONs] Calculate DD-pn parts (HF/PA) :", &

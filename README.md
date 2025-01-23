@@ -63,7 +63,8 @@ Usage of the different options.
 
 
 **Additional options and codes**
-|Code|Argument|Tested Description|
+
+|Code|Argument|Tested | Description|
 |----|----|----|----|
 | 1 | NA | OK | Removes the "gut" internal testing files printing |
 | 2 | NA | OK | Shut down the evaluation of fields (including rearrangement) for the PN-PAIRING part of the DD-interaction |

@@ -14,7 +14,7 @@ The pn-mixing space is problematic for no-core large scale calculations due the 
 
 Another limitation is the code cannot implement the VAP projection (work on progress).
 
-**The code has not been fully tested, specially for uncommon functions, only the simplest taurus+DD evaluation is reliable**. Avoid, explicit evaluation, using of cutoffs, the additional functional modes appart from the GUT-printing shotdown, removal of DD-proton/neutron HF/pairing terms and the implementation of several forces.
+**The code has not been fully tested, specially for uncommon functions, only the simplest taurus+DD evaluation is reliable**. Avoid, explicit evaluation, using of cutoffs, the additional functional modes appart from the GUT-printing shotdown, removal of DD-proton/neutron HF/pairing terms and the Matrix-Elements exporting.
 
 ## Use
 In addition to the Hamiltonian matrix elements and the input file from the original program, the density functional set up requires the file `input_DD_PARAMS.txt`. This is an example for the 2 density-dependent interaction M3Y-P6 with all the exchange(spin/isospin) terms and two different alpha constants in the functional.

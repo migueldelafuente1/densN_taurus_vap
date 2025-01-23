@@ -74,7 +74,7 @@ Usage of the different options.
 | 22 | float | NO - NA | Same functional as 21, argument rho0 associated to the nuclear matter density. If not given, it is setup as the nuclear denisty 0.138 fm^-3 (r0=1.2 fm)|
 | 31 | float | OK | Include Heisenberg exchange operator for -H\*P(t) for the DD term. x0H = H/t3 |
 | 32 | float | OK | Include Majorana exchange operator for -M\*P(s)\*P(t) for the DD term. x0M = M/t3|
-| \* | \* | Developing. |
+| \* | \* | \* | Developing. |
 
 
 To introduce several zero-range density dependent terms (up to 3), include the modes from 33 to 42 for including the t3, x0, x0-Heissenberg, x0-Majorana and alpha of each term. It cannot be used with options 21,22 and it is not tested with the cutoff options (11,12). The first term constants (including 31,32) will be copied for the first one, include the rest of them in order for each term following these codes:

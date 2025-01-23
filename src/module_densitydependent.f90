@@ -4625,7 +4625,7 @@ complex(r64), dimension(ndim,ndim) :: hspLR, deltaLR, deltaRL
 real(r64),    dimension(ndim,ndim) :: BU_gammaRR_DD
 complex(r64), dimension(ndim,ndim) :: gammaLR, gammaLR_DD,deltaLR_DD,deltaRL_DD
 
-integer :: a,b,a_sh,b_sh,spO2,i_r,i_an, ms, Tab
+integer :: a,b,a_sh,b_sh,spO2,i_r,i_an, ms, Tab, K
 complex(r64), dimension(4) :: int_hf, int_pa ! all arrays are for (pp, nn, pn, np)
 complex(r64), dimension(4) :: aux, aux_PE, aux_pair
 complex(r64) :: int_rea, auxRea
@@ -4648,13 +4648,17 @@ do i_r = 1, r_dim
     enddo   ! do a
 
     do ms = 1, 4
-      BulkP1(5,ms,i_r,i_an) = BulkP1(1,ms,i_r,i_an) + BulkP1(2,ms,i_r,i_an)
-      BulkP2(5,ms,i_r,i_an) = BulkP2(1,ms,i_r,i_an) + BulkP2(2,ms,i_r,i_an)
+    do K = 1, number_DD_terms
+      BulkP1(K,5,ms,i_r,i_an)=BulkP1(K,1,ms,i_r,i_an) + BulkP1(K,2,ms,i_r,i_an)
+      BulkP2(K,5,ms,i_r,i_an)=BulkP2(K,1,ms,i_r,i_an) + BulkP2(K,2,ms,i_r,i_an)
+    enddo !K
     enddo
   enddo
 enddo
 
-call calculate_common_rearrang_bulkFields(K)
+do K = 1, number_DD_terms
+  call calculate_common_rearrang_bulkFields(K)
+enddo
 
 if (only_bulk_fields) return  !! ========================================
 
@@ -4668,6 +4672,12 @@ gammaLR    = zzero
 gammaLR_DD = zzero
 deltaLR_DD = zzero
 deltaRL_DD = zzero
+
+do K = 1, number_DD_terms
+
+alpha_DD     = parameters_alp1x0x0Hx0M(K,1)
+t3_DD_CONST  = parameters_alp1x0x0Hx0M(K,2)
+x0_DD_FACTOR = parameters_alp1x0x0Hx0M(K,3)
 
 !!! Evaluate the pairing fields ----------------------
 !! Note :: Remember that radial functions already have the factor 1/b**3
@@ -4684,8 +4694,8 @@ do a = 1, spO2
     int_rea= zzero
 
     do i_r = 1, r_dim
-      rad_ab = weight_R(i_r) * radial_2b_sho_memo(a_sh, b_sh, i_r)
-      rad_ab = rad_ab * dexp((2.0d0+alpha_DD) * (r(i_r)/HO_b)**2)
+      rad_ab = weight_R(i_r) * radial_2b_sho_memo(K,a_sh, b_sh, i_r)
+      rad_ab = rad_ab * dexp((2.0d0+alpha_DD) * (r(K,i_r)/HO_b)**2)
       do i_an = 1, angular_dim
 
         !! EXCHANGE terms for the HF fields
@@ -4694,32 +4704,32 @@ do a = 1, spO2
         do ms = 1, 4
           !! NOTE: Angular 1, 2 functions are defined with direct form of ms,ms'
           if (hasX0M1) then
-            aux(ms) = AngFunctDUAL_P2(ms,a,b,i_an) * BulkP1(1,ms,i_r,i_an) !pp
+            aux(ms) = AngFunctDUAL_P2(ms,a,b,i_an) * BulkP1(K,1,ms,i_r,i_an) !pp
             aux_PE(1) = aux_PE(1)  + (X0M1*aux(ms))
-            aux(ms) = AngFunctDUAL_P2(ms,a,b,i_an) * BulkP1(2,ms,i_r,i_an) !nn
+            aux(ms) = AngFunctDUAL_P2(ms,a,b,i_an) * BulkP1(K,2,ms,i_r,i_an) !nn
             aux_PE(2) = aux_PE(2)  + (X0M1*aux(ms))
           endif
           !! pn np part, x0 dependence was calculated in BulkP1_**
           if (CALCULATE_DD_PN_HF) then
-          aux(ms) = AngFunctDUAL_P2(ms,a,b, i_an) * BulkP1(3,ms, i_r,i_an) !pn
+          aux(ms) = AngFunctDUAL_P2(ms,a,b, i_an) * BulkP1(K,3,ms, i_r,i_an) !pn
           aux_PE(3)  = aux_PE(3)  + aux(ms)
-          aux(ms) = AngFunctDUAL_P2(ms,a,b, i_an) * BulkP1(4,ms, i_r,i_an) !np
+          aux(ms) = AngFunctDUAL_P2(ms,a,b, i_an) * BulkP1(K,4,ms, i_r,i_an) !np
           aux_PE(4)  = aux_PE(4)  + aux(ms)
           endif
         enddo ! ms loop
 
         !! EXCHANGE Sum terms and add to the global (r,ang) value to integrate
         do Tab =  1, 4
-          aux_pair(Tab) = weight_LEB(i_an) * rad_ab * dens_alpha(i_r,i_an)
+          aux_pair(Tab) = weight_LEB(i_an) * rad_ab * dens_alpha(K,i_r,i_an)
           aux_pair(Tab) = aux_PE(Tab) * aux_pair(Tab)
           int_pa  (Tab) = int_pa(Tab) + aux_pair(Tab)
         enddo
 
         auxRea = zzero
         if (EVAL_REARRANGEMENT) then
-          auxRea  = REACommonFields(i_r,i_an) * dens_alpm1(i_r,i_an)
-          auxRea  = auxRea * rea_common_RadAng(a,b, i_r, i_an)
-          auxRea  = auxRea * dexp( (2.0d0+alpha_DD) * (r(i_r)/HO_b)**2)
+          auxRea  = REACommonFields(K,i_r,i_an) * dens_alpm1(K,i_r,i_an)
+          auxRea  = auxRea * rea_common_RadAng(K,a,b, i_r, i_an)
+          auxRea  = auxRea * dexp( (2.0d0+alpha_DD) * (r(K,i_r)/HO_b)**2)
           int_rea = int_rea + (auxRea * weight_R(i_r) * weight_LEB(i_an))
         endif
         ! rearrange for pn and np are the same (pn/np are Zero)
@@ -4740,6 +4750,7 @@ do a = 1, spO2
   enddo
 enddo
 
+enddo ! K- loop
 ! recover the gamma BU.
 do a = 1, ndim
   do b = 1, ndim
@@ -4791,7 +4802,7 @@ subroutine set_Radial1b_derivates
 integer   :: a_sh, n, l, n2, l2, i_l, i_n, i_r, K
 real(r64) :: radial
 
-allocate(radial_1b_diff_memo(HOsh_dim, -1:1, -1:1, r_dim))
+allocate(radial_1b_diff_memo(number_DD_terms, HOsh_dim, -1:1, -1:1, r_dim))
 radial_1b_diff_memo = zero
 
 do K = 1, number_DD_terms
@@ -5109,10 +5120,11 @@ write(111, fmt="(A)") "  i_r i_an r(ir)    grad_den_-1     imag(grad_-1)     &
 do i_r = 1, r_dim
   do i_an = 1, angular_dim
 
-    write(111,fmt='(2(I4,A),F5.2)',advance='no') i_r, ",", i_an, ",", r(i_r)
+    write(111,fmt='(2(I4,A),F5.2)',advance='no') i_r, ",", i_an, ",", r(K,i_r)
     do mu_ = -1, 1
       write(111,fmt='(A,F15.9,A,F15.9,A)',advance='no') ",", &
-    dreal(partial_dens(K,mu_,i_r,i_an)), " ",dimag(partial_dens(K,mu_,i_r,i_an)),"j"
+        dreal(partial_dens(K,mu_,i_r,i_an)), " ",&
+        dimag(partial_dens(K,mu_,i_r,i_an)),"j"
     enddo
     if (dabs(dimag(partial_dens(K,2,i_r,i_an))).GT.1.0e-9) then
       print "(A,2I4,D15.9,A)","[ERROR IMAG] grad diff imag > 1e-9:",&
@@ -5338,7 +5350,7 @@ do a = 1, spO2
           aa = a + ((t - 1)*spO2)
           cc = c + ((t - 1)*spO2)
           psrea_field(aa,cc) = psrea_field(aa,cc) + &
-            (int_const * weight_LEB(i_a) * rad_ac * dens_alpm1(i_r,i_a) * &
+            (int_const * weight_LEB(i_a) * rad_ac * dens_alpm1(K,i_r,i_a) * &
             (dreal(partial_dens(K,2,i_r,i_a))**0.5d0)* (auxD(t) - auxE(t)))
         end do
 
@@ -5550,7 +5562,7 @@ do i_r = 1, r_dim
           case (1,4)
             aux = ((rea_common_RadAng(K,a,c, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, d, i_a) * &
-                    radial_2b_sho_memo(b_sh, d_sh, i_r)) - &
+                    radial_2b_sho_memo(K,b_sh, d_sh, i_r)) - &
                    (rea_common_RadAng(K,a,d, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, c, i_a) * &
                     radial_2b_sho_memo(K,b_sh, c_sh, i_r)))
@@ -5559,7 +5571,7 @@ do i_r = 1, r_dim
 
             aux = ((rea_common_RadAng(K,a,c, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, d, i_a) * &
-                    radial_2b_sho_memo(b_sh, d_sh, i_r)) - &
+                    radial_2b_sho_memo(K,b_sh, d_sh, i_r)) - &
                    (rea_common_RadAng(K,a,d, i_r,i_a) * &
                     AngFunctDUAL_HF(ms, b, c, i_a) * &
                     radial_2b_sho_memo(K,b_sh, c_sh, i_r)))

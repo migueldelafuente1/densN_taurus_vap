@@ -302,7 +302,7 @@ else
 endif
 
 if ((FUNCTIONAL_DENS_MODE .EQ. 2) .AND. (has_HEIS_MAJO_TERMS)) then
-  print "[ERROR] Functional Form 2 (Phys.Rev.C 60 064312) and Heis/Majo terms!"
+print *,"[ERROR] Functional Form 2 (Phys.Rev.C 60 064312) and Heis/Majo terms!"
   STOP
 end if
 

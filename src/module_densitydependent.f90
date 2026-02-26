@@ -49,11 +49,6 @@ real(r64) :: R_MAX    = 7.5d0
 integer   :: THE_grid = 1
 integer   :: PHI_grid = 1
 
-!! spatial steps for trapezoidal integration
-real(r64) :: d_r   ! = R_MAX / (r_dim - 1)
-real(r64) :: d_theta
-real(r64) :: d_phi
-
 ! Quadratures for integration
 real(r64), dimension(:), allocatable   :: x_R
 real(r64), dimension(:), allocatable   :: weight_R
@@ -306,7 +301,10 @@ else
   print '(A,F9.5)', "[WARGNING] Awkward ALPHA constant for DD-EDF: ", alpha_DD
 endif
 
-d_r = R_MAX / (r_dim - 1)
+if ((FUNCTIONAL_DENS_MODE .EQ. 2) .AND. (has_HEIS_MAJO_TERMS)) then
+  print "[ERROR] Functional Form 2 (Phys.Rev.C 60 064312) and Heis/Majo terms!"
+  STOP
+end if
 
 allocate(x_R(r_dim))
 allocate(weight_R(r_dim))
@@ -1532,9 +1530,9 @@ do ms = 1, 4
   BulkP1_HM(K,2,ms,i_r,i_a) = BulkP1_HM(K,2,ms,i_r,i_a) + (B1_part * kaN) !nn
 
   B1_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms ,a,b,i_a) &
-            - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms2,a,b,i_a))
+            + (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms2,a,b,i_a))
   B2_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms2,a,b,i_a) &
-            - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms ,a,b,i_a))
+            + (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms ,a,b,i_a))
   BulkP1_HM(K,3,ms,i_r,i_a)= BulkP1_HM(K,3,ms,i_r,i_a) + &
                                 (B1_part*kNP - B2_part*kPN) !pn
   BulkP1_HM(K,4,ms,i_r,i_a)= BulkP1_HM(K,4,ms,i_r,i_a) + &
@@ -1546,13 +1544,13 @@ do ms = 1, 4
   BulkP1_HM(K,2,ms,i_r,i_a) = BulkP1_HM(K,2,ms,i_r,i_a) + (B1_part * kaNt) !nn
 
   B1_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms ,b,a,i_a) &
-            - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms2,b,a,i_a))
+            + (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms2,b,a,i_a))
   B2_part =    CONST_x0_EXC_HEIS * AngFunctDUAL_P1(ms2,b,a,i_a) &
-            - (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms ,b,a,i_a))
+            + (CONST_x0_EXC_MAJO * AngFunctDUAL_P1(ms ,b,a,i_a))
   BulkP1_HM(K,3,ms,i_r,i_a)= BulkP1_HM(K,3,ms,i_r,i_a) + &
-                              (B1_part*kNPt-B2_part*kPNt) !pn
+                              (B1_part*kNPt - B2_part*kPNt) !pn
   BulkP1_HM(K,4,ms,i_r,i_a)= BulkP1_HM(K,4,ms,i_r,i_a) + &
-                              (B1_part*kPNt-B2_part*kNPt) !np
+                              (B1_part*kPNt - B2_part*kNPt) !np
   endif
 
   endif
@@ -3591,7 +3589,7 @@ integer      ::  ms, ms2
 complex(r64) :: aux_d, aux_e, aux_p, aux_pnp, aux1, aux2, aux3, aux4
 real(r64)    :: X0MpH
 
-X0MpH = CONST_x0_EXC_HEIS + CONST_x0_EXC_MAJO
+X0MpH = CONST_x0_EXC_HEIS - CONST_x0_EXC_MAJO
 
 if (.NOT. has_HEIS_MAJO_TERMS) return
 
@@ -3625,13 +3623,13 @@ do ms = 1, 4
   aux_e = aux_e - (CONST_x0_EXC_HEIS * aux1)
 
   !Pairing rearrangement fields
-  aux1  = BulkP2(K,1,ms, i_r,i_a) * BulkP1(K,1,ms, i_r,i_a) !pp
-  aux2  = BulkP2(K,2,ms, i_r,i_a) * BulkP1(K,2,ms, i_r,i_a) !nn
+  aux1  = BulkP2(K,1,ms, i_r,i_a) * BulkP1_HM(K,1,ms, i_r,i_a) !pp
+  aux2  = BulkP2(K,2,ms, i_r,i_a) * BulkP1_HM(K,2,ms, i_r,i_a) !nn
   aux_p = aux_p + (aux1 + aux2)
   !pn np part (remember the H 1Bnp - M*1Bpn - H 1Bpn  + M*1Bpn was done already)
   if (CALCULATE_DD_PN_PA) then
-    aux1   = BulkP2(K,3,ms, i_r,i_a) * BulkP1(K,3,ms, i_r,i_a) !pn*pn
-    aux2   = BulkP2(K,4,ms, i_r,i_a) * BulkP1(K,4,ms, i_r,i_a) !np*np
+    aux1   = BulkP2(K,3,ms, i_r,i_a) * BulkP1_HM(K,3,ms, i_r,i_a) !pn*pn
+    aux2   = BulkP2(K,4,ms, i_r,i_a) * BulkP1_HM(K,4,ms, i_r,i_a) !np*np
     aux_pnp = aux_pnp + (aux1 + aux2)
 
     aux1  = BulkHF(K,4,ms2, i_r,i_a) * BulkHF(K,3,ms,i_r,i_a) !pn*np
@@ -3745,7 +3743,7 @@ complex(r64) :: sumD_ang
 integer      :: ms, Tac
 real(r64)    :: X0MpH
 
-X0MpH = CONST_x0_EXC_HEIS + CONST_x0_EXC_MAJO
+X0MpH = CONST_x0_EXC_HEIS - CONST_x0_EXC_MAJO
 
 if (.NOT. (has_HEIS_MAJO_TERMS)) return
 
@@ -3757,8 +3755,8 @@ auxHfD(1) = (CONST_x0_EXC_HEIS*dens_pnt(K,1,i_r,i_ang) - &
 auxHfD(2) = (CONST_x0_EXC_HEIS*dens_pnt(K,2,i_r,i_ang) - &
              CONST_x0_EXC_MAJO*dens_pnt(K,5,i_r,i_ang))
 if (CALCULATE_DD_PN_HF) then
-  auxHfD(3) = -CONST_x0_EXC_HEIS * dens_pnt(K,3,i_r,i_ang)
-  auxHfD(4) = -CONST_x0_EXC_HEIS * dens_pnt(K,4,i_r,i_ang)
+  auxHfD(3) = CONST_x0_EXC_HEIS * dens_pnt(K,3,i_r,i_ang)
+  auxHfD(4) = CONST_x0_EXC_HEIS * dens_pnt(K,4,i_r,i_ang)
   endif
 do Tac = 1, 4
   auxHfD(Tac) = sumD_ang * auxHfD(Tac)
@@ -3795,12 +3793,12 @@ do ms = 1, 4
   endif
 
   !! NOTE: Angular 1, 2 functions are defined with direct form of ms,ms'
-  if (hasX0M1) then
+  !if (hasX0M1) then
     aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1_HM(K,1,ms,i_r,i_ang) !pp
     aux_PE(1) = aux_PE(1)  + (X0MpH * aux(ms))
     aux(ms) = AngFunctDUAL_P2(ms,a,c,i_ang) * BulkP1_HM(K,2,ms,i_r,i_ang) !nn
     aux_PE(2) = aux_PE(2)  + (X0MpH * aux(ms))
-  endif
+  !endif
 
   !! pn np part, x0 dependence was calculated in BulkP1_**
   if (CALCULATE_DD_PN_PA) then
@@ -3988,7 +3986,7 @@ do a = 1, spO2
 
             if ((i_r == R_PRINT).AND.(i_ang == ANG_PRINT)) then
               write(555, fmt='(5I4,A,4(F20.15,SP,F20.15,"j"))') &
-                a,c,i_r,i_ang,ms,"%%", auxHfE(1),auxHfE(2),auxHfE(3),auxHfE(4)
+                 a,c,i_r,i_ang,ms,"%%", auxHfE(1),auxHfE(2),auxHfE(3),auxHfE(4)
               write(557, fmt='(5I4,A,4(F20.15,SP,F20.15,"j"))') &
                 a,c,i_r,i_ang,ms,"%%", aux_PE(1),aux_PE(2),aux_PE(3),aux_PE(4)
             endif
